@@ -58,6 +58,8 @@ inline void _Destroy(_Tp* __pointer) {
   __pointer->~_Tp();
 }
 
+//zane: false type(non-trival destructor)
+//zane: delete all elements
 template <class _ForwardIterator>
 void
 __destroy_aux(_ForwardIterator __first, _ForwardIterator __last, __false_type)
@@ -66,6 +68,8 @@ __destroy_aux(_ForwardIterator __first, _ForwardIterator __last, __false_type)
     destroy(&*__first);
 }
 
+//zane: true type(trivial destructor)
+//zane: do nothing.
 template <class _ForwardIterator> 
 inline void __destroy_aux(_ForwardIterator, _ForwardIterator, __true_type) {}
 
@@ -73,6 +77,7 @@ template <class _ForwardIterator, class _Tp>
 inline void 
 __destroy(_ForwardIterator __first, _ForwardIterator __last, _Tp*)
 {
+  //zane: checking if the __VALUE_TYPE of __first is trivial destructor
   typedef typename __type_traits<_Tp>::has_trivial_destructor
           _Trivial_destructor;
   __destroy_aux(__first, __last, _Trivial_destructor());
@@ -83,6 +88,7 @@ inline void _Destroy(_ForwardIterator __first, _ForwardIterator __last) {
   __destroy(__first, __last, __VALUE_TYPE(__first));
 }
 
+//zane: If the iterator is the base types, do nothing.
 inline void _Destroy(char*, char*) {}
 inline void _Destroy(int*, int*) {}
 inline void _Destroy(long*, long*) {}

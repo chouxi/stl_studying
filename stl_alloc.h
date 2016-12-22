@@ -104,11 +104,12 @@ __STL_BEGIN_NAMESPACE
     extern void (* __malloc_alloc_oom_handler)();
 # endif
 #endif
-
+//zane: malloc based alloc.
 template <int __inst>
 class __malloc_alloc_template {
 
 private:
+  //zane: oom means out of memory
 
   static void* _S_oom_malloc(size_t);
   static void* _S_oom_realloc(void*, size_t);
@@ -121,16 +122,19 @@ public:
 
   static void* allocate(size_t __n)
   {
+    //zane: directly call malloc if oom void* __result will be 0
     void* __result = malloc(__n);
+    //zane: call _S_oom_malloc() to malloc if oom
     if (0 == __result) __result = _S_oom_malloc(__n);
     return __result;
   }
 
+  //zane: just uses free() to deallocate
   static void deallocate(void* __p, size_t /* __n */)
   {
     free(__p);
   }
-
+  //zane: similar to allocate
   static void* reallocate(void* __p, size_t /* old_sz */, size_t __new_sz)
   {
     void* __result = realloc(__p, __new_sz);
@@ -138,8 +142,12 @@ public:
     return __result;
   }
 
+  //zane: this function returns a function pointer: void(*)()
+  //zane: and the input of this function void (*f)() is a void(*)() function pointer
+  //zane: we can get it directly by the assignments of the __malloc_alloc_oom_handler variable.
   static void (* __set_malloc_handler(void (*__f)()))()
   {
+    //zane: return previous function pointer and set new one to variable.
     void (* __old)() = __malloc_alloc_oom_handler;
     __malloc_alloc_oom_handler = __f;
     return(__old);
@@ -161,11 +169,17 @@ __malloc_alloc_template<__inst>::_S_oom_malloc(size_t __n)
     void (* __my_malloc_handler)();
     void* __result;
 
+    //zane: dead loop same as while(1)
+    //zane: new-handler mechanism: in CPP, when ::operator new oom;
+    //zane: before throw a std::bad_alloc, will call a function which defined by programmer first.
     for (;;) {
         __my_malloc_handler = __malloc_alloc_oom_handler;
         if (0 == __my_malloc_handler) { __THROW_BAD_ALLOC; }
+        //zane: call the __malloc_alloc_oom_handler
         (*__my_malloc_handler)();
+        //zane: just uses malloc to malloc memory again
         __result = malloc(__n);
+        //zane: until malloc success
         if (__result) return(__result);
     }
 }
@@ -176,6 +190,7 @@ void* __malloc_alloc_template<__inst>::_S_oom_realloc(void* __p, size_t __n)
     void (* __my_malloc_handler)();
     void* __result;
 
+    //zane: similar to _S_oom_malloc(size_t __n)
     for (;;) {
         __my_malloc_handler = __malloc_alloc_oom_handler;
         if (0 == __my_malloc_handler) { __THROW_BAD_ALLOC; }
@@ -185,8 +200,12 @@ void* __malloc_alloc_template<__inst>::_S_oom_realloc(void* __p, size_t __n)
     }
 }
 
+//zane: set alias malloc_alloc here
+//zane: the inst was default set to 0
 typedef __malloc_alloc_template<0> malloc_alloc;
 
+//zane: this simple_alloc is just a encapsulation of the basic allocate or deallocate funcs
+//zane: almost all the container in SGI_STL use this interface to allocate and deallocate
 template<class _Tp, class _Alloc>
 class simple_alloc {
 
@@ -245,6 +264,7 @@ public:
 };
 
 
+//zane: if ussing malloc, set malloc_alloc to alloc and single_client_alloc.
 # ifdef __USE_MALLOC
 
 typedef malloc_alloc alloc;
@@ -285,6 +305,8 @@ typedef malloc_alloc single_client_alloc;
   enum {_NFREELISTS = 16}; // _MAX_BYTES/_ALIGN
 #endif
 
+//zane: level 2 allocator without malloc
+//zane: the machanism of SGI STL is when there is a block bigger than 128byte move to malloc
 template <bool threads, int inst>
 class __default_alloc_template {
 
@@ -292,15 +314,19 @@ private:
   // Really we should use static const int x = N
   // instead of enum { x = N }, but few compilers accept the former.
 #if ! (defined(__SUNPRO_CC) || defined(__GNUC__))
-    enum {_ALIGN = 8};
-    enum {_MAX_BYTES = 128};
+    enum {_ALIGN = 8}; //zane: upgrade bound of small blocks
+    enum {_MAX_BYTES = 128}; //zane: upbound of small blocks
     enum {_NFREELISTS = 16}; // _MAX_BYTES/_ALIGN
 # endif
   static size_t
+  //zane: change bytes to multiple of 8(_ALIGN)
   _S_round_up(size_t __bytes) 
+  //zane: add an align-1 is to guarantee the __bytes will increase more than ALIGN
+  //zane: then set the last 3 bits of __bytes to 0.
     { return (((__bytes) + (size_t) _ALIGN-1) & ~((size_t) _ALIGN - 1)); }
 
 __PRIVATE:
+  //zane: Using union here is for decrease the memory usage
   union _Obj {
         union _Obj* _M_free_list_link;
         char _M_client_data[1];    /* The client sees this.        */
@@ -310,8 +336,10 @@ private:
     static _Obj* __STL_VOLATILE _S_free_list[]; 
         // Specifying a size results in duplicate def for 4.1
 # else
+    //zane: __STL_VOLATILE here is for avioding compilers optimize the memory mapped IO
     static _Obj* __STL_VOLATILE _S_free_list[_NFREELISTS]; 
 # endif
+  //zane: decide the number(index) of freelist
   static  size_t _S_freelist_index(size_t __bytes) {
         return (((__bytes) + (size_t)_ALIGN-1)/(size_t)_ALIGN - 1);
   }
@@ -323,8 +351,8 @@ private:
   static char* _S_chunk_alloc(size_t __size, int& __nobjs);
 
   // Chunk allocation state.
-  static char* _S_start_free;
-  static char* _S_end_free;
+  static char* _S_start_free; //starting position of memory
+  static char* _S_end_free; //ending position of memory
   static size_t _S_heap_size;
 
 # ifdef __STL_THREADS
@@ -350,10 +378,12 @@ public:
     void* __ret = 0;
 
     if (__n > (size_t) _MAX_BYTES) {
+      //zane: call malloc based allocater when __n is bigger than _MAX_BYTES
       __ret = malloc_alloc::allocate(__n);
     }
     else {
       _Obj* __STL_VOLATILE* __my_free_list
+      //zane: starting index + index
           = _S_free_list + _S_freelist_index(__n);
       // Acquire the lock here with a constructor call.
       // This ensures that it is released in exit or during stack
@@ -377,6 +407,7 @@ public:
   /* __p may not be 0 */
   static void deallocate(void* __p, size_t __n)
   {
+    //zane: similar to allocate
     if (__n > (size_t) _MAX_BYTES)
       malloc_alloc::deallocate(__p, __n);
     else {
@@ -389,6 +420,8 @@ public:
       /*REFERENCED*/
       _Lock __lock_instance;
 #       endif /* _NOTHREADS */
+      //zane: awsome here
+      //zane: set the & of need free block to the top of my_free_list, the selected block
       __q -> _M_free_list_link = *__my_free_list;
       *__my_free_list = __q;
       // lock is released here
@@ -398,7 +431,7 @@ public:
   static void* reallocate(void* __p, size_t __old_sz, size_t __new_sz);
 
 } ;
-
+//zane: set alloc to default, whether alloc is malloc or not.
 typedef __default_alloc_template<__NODE_ALLOCATOR_THREADS, 0> alloc;
 typedef __default_alloc_template<false, 0> single_client_alloc;
 
@@ -430,13 +463,16 @@ __default_alloc_template<__threads, __inst>::_S_chunk_alloc(size_t __size,
                                                             int& __nobjs)
 {
     char* __result;
+    //zane: bytes need
     size_t __total_bytes = __size * __nobjs;
+    //zane: left memory in pool
     size_t __bytes_left = _S_end_free - _S_start_free;
-
+    //zane: if enough, directly return
     if (__bytes_left >= __total_bytes) {
         __result = _S_start_free;
         _S_start_free += __total_bytes;
         return(__result);
+    //zane: enough for at least size
     } else if (__bytes_left >= __size) {
         __nobjs = (int)(__bytes_left/__size);
         __total_bytes = __size * __nobjs;
@@ -454,6 +490,7 @@ __default_alloc_template<__threads, __inst>::_S_chunk_alloc(size_t __size,
             ((_Obj*)_S_start_free) -> _M_free_list_link = *__my_free_list;
             *__my_free_list = (_Obj*)_S_start_free;
         }
+        //zane: get enough memory start from _S_start_free
         _S_start_free = (char*)malloc(__bytes_to_get);
         if (0 == _S_start_free) {
             size_t __i;
@@ -471,19 +508,23 @@ __default_alloc_template<__threads, __inst>::_S_chunk_alloc(size_t __size,
                     *__my_free_list = __p -> _M_free_list_link;
                     _S_start_free = (char*)__p;
                     _S_end_free = _S_start_free + __i;
+                    //zane: awsome recursion for updating __nobjs
                     return(_S_chunk_alloc(__size, __nobjs));
                     // Any leftover piece will eventually make it to the
                     // right free list.
                 }
             }
 	    _S_end_free = 0;	// In case of exception.
+            //zane: call oom mechanism
             _S_start_free = (char*)malloc_alloc::allocate(__bytes_to_get);
             // This should either throw an
             // exception or remedy the situation.  Thus we assume it
             // succeeded.
         }
+        //zane: update status
         _S_heap_size += __bytes_to_get;
         _S_end_free = _S_start_free + __bytes_to_get;
+        //zane: awsome recursion for updating __nobjs
         return(_S_chunk_alloc(__size, __nobjs));
     }
 }
@@ -496,7 +537,9 @@ template <bool __threads, int __inst>
 void*
 __default_alloc_template<__threads, __inst>::_S_refill(size_t __n)
 {
+    //zane: default 20 nobjs
     int __nobjs = 20;
+    //zane: __nobjs pass by reference
     char* __chunk = _S_chunk_alloc(__n, __nobjs);
     _Obj* __STL_VOLATILE* __my_free_list;
     _Obj* __result;
@@ -510,6 +553,7 @@ __default_alloc_template<__threads, __inst>::_S_refill(size_t __n)
     /* Build free list in chunk */
       __result = (_Obj*)__chunk;
       *__my_free_list = __next_obj = (_Obj*)(__chunk + __n);
+      //zane: connect the blocks in free_list
       for (__i = 1; ; __i++) {
         __current_obj = __next_obj;
         __next_obj = (_Obj*)((char*)__next_obj + __n);
@@ -621,6 +665,8 @@ public:
     { _Alloc::deallocate(__p, __n * sizeof(_Tp)); }
 
   size_type max_size() const __STL_NOTHROW 
+  //zane: size_t(-1) is the UNIT_MAX
+  //zane: since size_t is a unsigned integer
     { return size_t(-1) / sizeof(_Tp); }
 
   void construct(pointer __p, const _Tp& __val) { new(__p) _Tp(__val); }
@@ -684,7 +730,8 @@ struct __allocator {
   __allocator(const __allocator<_Tp1, _Alloc>& __a) __STL_NOTHROW
     : __underlying_alloc(__a.__underlying_alloc) {}
   ~__allocator() __STL_NOTHROW {}
-
+  //zane: both two address func is return the address.
+  //zane: same as &__x.
   pointer address(reference __x) const { return &__x; }
   const_pointer address(const_reference __x) const { return &__x; }
 

@@ -37,6 +37,7 @@ __STL_BEGIN_NAMESPACE
 
 // Valid if copy construction is equivalent to assignment, and if the
 //  destructor is trivial.
+//zane: the structure of other functions in this file are similar to copy.
 template <class _InputIter, class _ForwardIter>
 inline _ForwardIter 
 __uninitialized_copy_aux(_InputIter __first, _InputIter __last,
@@ -51,10 +52,12 @@ _ForwardIter
 __uninitialized_copy_aux(_InputIter __first, _InputIter __last,
                          _ForwardIter __result,
                          __false_type)
+//zane: not POD
 {
   _ForwardIter __cur = __result;
   __STL_TRY {
     for ( ; __first != __last; ++__first, ++__cur)
+      //zane: call constructor in stl_construct.h
       _Construct(&*__cur, *__first);
     return __cur;
   }
@@ -67,6 +70,7 @@ inline _ForwardIter
 __uninitialized_copy(_InputIter __first, _InputIter __last,
                      _ForwardIter __result, _Tp*)
 {
+  //zane: POD: Plain Old Data, classical C type.
   typedef typename __type_traits<_Tp>::is_POD_type _Is_POD;
   return __uninitialized_copy_aux(__first, __last, __result, _Is_POD());
 }
@@ -80,6 +84,8 @@ inline _ForwardIter
                               __VALUE_TYPE(__result));
 }
 
+//zane: optimization of char* and wchar_t*
+//zane: memmove, very fast
 inline char* uninitialized_copy(const char* __first, const char* __last,
                                 char* __result) {
   memmove(__result, __first, __last - __first);
