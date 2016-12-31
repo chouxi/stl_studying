@@ -22,7 +22,7 @@
 #include <stl_uninitialized.h>
 #include <stl_raw_storage_iter.h>
 
-
+//zane: auto ptr
 __STL_BEGIN_NAMESPACE
 
 #if defined(__SGI_STL_USE_AUTO_PTR_CONVERSIONS) && \
@@ -41,15 +41,18 @@ private:
 
 public:
   typedef _Tp element_type;
-
+  //zane: explicit make the consturctor explicit without implicit convert of input variables.
+  //zane: set input __p to private _M_ptr.
   explicit auto_ptr(_Tp* __p = 0) __STL_NOTHROW : _M_ptr(__p) {}
   auto_ptr(auto_ptr& __a) __STL_NOTHROW : _M_ptr(__a.release()) {}
 
 #ifdef __STL_MEMBER_TEMPLATES
+  //zane: set auto_ptr __a to null pointer and assign __a(before set to NULL) to _M_ptr
   template <class _Tp1> auto_ptr(auto_ptr<_Tp1>& __a) __STL_NOTHROW
     : _M_ptr(__a.release()) {}
 #endif /* __STL_MEMBER_TEMPLATES */
-
+  //zane: similar to previous function.
+  //zane: But desturct current internal pointer first.
   auto_ptr& operator=(auto_ptr& __a) __STL_NOTHROW {
     if (&__a != this) {
       delete _M_ptr;
@@ -74,21 +77,29 @@ public:
   // presence can be detected only if _Tp::~_Tp() throws, but (17.4.3.6/2)
   // this is prohibited.
   ~auto_ptr() { delete _M_ptr; }
-
+  //zane: overloading * and ->
+  //zane: get the content the _M_ptr points to.
   _Tp& operator*() const __STL_NOTHROW {
     return *_M_ptr;
   }
+  //zane: get the _M_ptr itself.
   _Tp* operator->() const __STL_NOTHROW {
     return _M_ptr;
   }
+  //zane: same as ->
   _Tp* get() const __STL_NOTHROW {
     return _M_ptr;
   }
+  //zane: Sets the auto_ptr internal pointer to null pointer (which indicates it points to no object) without destructing the object currently pointed by the auto_ptr.( From CPP reference)
+  //zane: To force a destruction of the object pointed, use member function reset() instead.
   _Tp* release() __STL_NOTHROW {
     _Tp* __tmp = _M_ptr;
     _M_ptr = 0;
     return __tmp;
   }
+  //zane: destruct the internal pointer.
+  //zane: then set the input pointer to internal pointer.
+  //zane: If input pointer is 0, set internal pointer to 0.(same as release())
   void reset(_Tp* __p = 0) __STL_NOTHROW {
     if (__p != _M_ptr) {
       delete _M_ptr;
@@ -101,6 +112,7 @@ public:
   // in fact, most present-day compilers do not support the language 
   // features that these conversions rely on.
   
+//zane: ignore this part.
 #if defined(__SGI_STL_USE_AUTO_PTR_CONVERSIONS) && \
     defined(__STL_MEMBER_TEMPLATES)
 
