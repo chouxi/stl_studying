@@ -60,9 +60,13 @@ struct _List_iterator_base {
   _List_iterator_base(_List_node_base* __x) : _M_node(__x) {}
   _List_iterator_base() {}
 
+  //zane: unit function of ++ and -- operations.
   void _M_incr() { _M_node = _M_node->_M_next; }
   void _M_decr() { _M_node = _M_node->_M_prev; }
 
+  //zane: basic equal operation
+  //zane: These two operators donot need return the input related type.
+  //zane: only bool. So it's works for every types. Base functions.
   bool operator==(const _List_iterator_base& __x) const {
     return _M_node == __x._M_node;
   }
@@ -71,6 +75,8 @@ struct _List_iterator_base {
   }
 };  
 
+//zane: this iterator inherit from _List_iterator_base
+//zane: But this is generic
 template<class _Tp, class _Ref, class _Ptr>
 struct _List_iterator : public _List_iterator_base {
   typedef _List_iterator<_Tp,_Tp&,_Tp*>             iterator;
@@ -86,21 +92,25 @@ struct _List_iterator : public _List_iterator_base {
   _List_iterator() {}
   _List_iterator(const iterator& __x) : _List_iterator_base(__x._M_node) {}
 
+  //zane: Overloading operators.
   reference operator*() const { return ((_Node*) _M_node)->_M_data; }
 
 #ifndef __SGI_STL_NO_ARROW_OPERATOR
   pointer operator->() const { return &(operator*()); }
 #endif /* __SGI_STL_NO_ARROW_OPERATOR */
 
+  //zane: ++iterator
   _Self& operator++() { 
     this->_M_incr();
     return *this;
   }
+  //zane: iterator++
   _Self operator++(int) { 
     _Self __tmp = *this;
     this->_M_incr();
     return __tmp;
   }
+  //zane: similar to ++
   _Self& operator--() { 
     this->_M_decr();
     return *this;
