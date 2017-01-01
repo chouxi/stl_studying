@@ -150,7 +150,7 @@ protected:
 };
 
 #endif /* __STL_USE_STD_ALLOCATORS */
-
+//zane: default allocator. Don't need to specify when call vector.
 template <class _Tp, class _Alloc = __STL_DEFAULT_ALLOCATOR(_Tp) >
 class vector : protected _Vector_base<_Tp, _Alloc> 
 {
@@ -161,9 +161,13 @@ class vector : protected _Vector_base<_Tp, _Alloc>
 private:
   typedef _Vector_base<_Tp, _Alloc> _Base;
 public:
+  //zane: typedefs for STL iterator traits.
   typedef _Tp value_type;
   typedef value_type* pointer;
   typedef const value_type* const_pointer;
+  //zane: iterator of vector is original pointer.
+  //zane: So, when we use iterator to traverse vector,
+  //zane: we get the pointer of the element in the vector.
   typedef value_type* iterator;
   typedef const value_type* const_iterator;
   typedef value_type& reference;
@@ -202,7 +206,8 @@ public:
   const_iterator begin() const { return _M_start; }
   iterator end() { return _M_finish; }
   const_iterator end() const { return _M_finish; }
-
+  //zane: reverse_vector_iter operations.
+  //zane: rbegin & rend, implement the reverse.
   reverse_iterator rbegin()
     { return reverse_iterator(end()); }
   const_reverse_iterator rbegin() const
@@ -212,24 +217,32 @@ public:
   const_reverse_iterator rend() const
     { return const_reverse_iterator(begin()); }
 
+  //zane: continous memory block.
+  //zane: so can directly minus.
   size_type size() const
     { return size_type(end() - begin()); }
+  //zane: size_type:size_t is a unsigned integer.
   size_type max_size() const
     { return size_type(-1) / sizeof(_Tp); }
+  //zane: usually bigger than size.
   size_type capacity() const
     { return size_type(_M_end_of_storage - begin()); }
   bool empty() const
     { return begin() == end(); }
-
+  //zane: base of random access.
+  //zane: does not have range check.
+  //zane: return reference.
   reference operator[](size_type __n) { return *(begin() + __n); }
   const_reference operator[](size_type __n) const { return *(begin() + __n); }
 
 #ifdef __STL_THROW_RANGE_ERRORS
+  //zane: out of range check.
   void _M_range_check(size_type __n) const {
     if (__n >= this->size())
       __stl_throw_range_error("vector");
   }
 
+  //zane: this is better than [], because it's check out)of_range previous to get memory.
   reference at(size_type __n)
     { _M_range_check(__n); return (*this)[__n]; }
   const_reference at(size_type __n) const
@@ -246,14 +259,18 @@ public:
 
   explicit vector(size_type __n)
     : _Base(__n, allocator_type())
+    //zane: no specify _Tp() value, filled in default _Tp() construction.
     { _M_finish = uninitialized_fill_n(_M_start, __n, _Tp()); }
 
+  //zane: an overload version of copy other vector.
   vector(const vector<_Tp, _Alloc>& __x) 
     : _Base(__x.size(), __x.get_allocator())
+    //zane: copy.
     { _M_finish = uninitialized_copy(__x.begin(), __x.end(), _M_start); }
 
 #ifdef __STL_MEMBER_TEMPLATES
   // Check whether it's an integral type.  If so, it's not an iterator.
+  //zane: filled with traits tech.
   template <class _InputIterator>
   vector(_InputIterator __first, _InputIterator __last,
          const allocator_type& __a = allocator_type()) : _Base(__a) {
@@ -267,7 +284,7 @@ public:
     _M_end_of_storage = _M_start + __n; 
     _M_finish = uninitialized_fill_n(_M_start, __n, __value);
   }
-
+  //zane: if it's an iterator.
   template <class _InputIterator>
   void _M_initialize_aux(_InputIterator __first, _InputIterator __last,
                          __false_type) {
@@ -275,21 +292,28 @@ public:
   }
 
 #else
+  //zane: just use 2 pointers to initial.
   vector(const _Tp* __first, const _Tp* __last,
          const allocator_type& __a = allocator_type())
+  //zane: call _Base with size and default __a (if not specified)
     : _Base(__last - __first, __a) 
     { _M_finish = uninitialized_copy(__first, __last, _M_start); }
 #endif /* __STL_MEMBER_TEMPLATES */
 
   ~vector() { destroy(_M_start, _M_finish); }
 
+  //zane: we can see that the implementation of = operator of 2 vevctor 
+  //zane: is to call input vector version vector constructor.
   vector<_Tp, _Alloc>& operator=(const vector<_Tp, _Alloc>& __x);
   void reserve(size_type __n) {
     if (capacity() < __n) {
       const size_type __old_size = size();
+      //zane: first allcate a new one and copy previous elements into it.
       iterator __tmp = _M_allocate_and_copy(__n, _M_start, _M_finish);
+      //zane: then destory the old one. all(from start to _M_end_of_storage)
       destroy(_M_start, _M_finish);
       _M_deallocate(_M_start, _M_end_of_storage - _M_start);
+      //zane: finally set new status variables.
       _M_start = __tmp;
       _M_finish = __tmp + __old_size;
       _M_end_of_storage = _M_start + __n;
@@ -330,12 +354,14 @@ public:
 
 #endif /* __STL_MEMBER_TEMPLATES */
 
+  //zane: easy front, back funcs just return pointers.
   reference front() { return *begin(); }
   const_reference front() const { return *begin(); }
   reference back() { return *(end() - 1); }
   const_reference back() const { return *(end() - 1); }
 
   void push_back(const _Tp& __x) {
+    //zane: if capacity is enough.
     if (_M_finish != _M_end_of_storage) {
       construct(_M_finish, __x);
       ++_M_finish;
@@ -343,6 +369,7 @@ public:
     else
       _M_insert_aux(end(), __x);
   }
+  //zane: push_back default __Tp().
   void push_back() {
     if (_M_finish != _M_end_of_storage) {
       construct(_M_finish);
@@ -351,6 +378,8 @@ public:
     else
       _M_insert_aux(end());
   }
+  //zane: just swap status variables of 2 vector.
+  //zane: by using std::swap.
   void swap(vector<_Tp, _Alloc>& __x) {
     __STD::swap(_M_start, __x._M_start);
     __STD::swap(_M_finish, __x._M_finish);
@@ -406,13 +435,17 @@ public:
 
   void _M_fill_insert (iterator __pos, size_type __n, const _Tp& __x);
 
+  //zane: just destroy last one.
   void pop_back() {
+    //zane: -- first, because --_M_finish points to nothing.
     --_M_finish;
     destroy(_M_finish);
   }
   iterator erase(iterator __position) {
+    //zane: move all element back one step.
     if (__position + 1 != end())
       copy(__position + 1, _M_finish, __position);
+    //zane: destroy last one.
     --_M_finish;
     destroy(_M_finish);
     return __position;
@@ -424,6 +457,7 @@ public:
     return __first;
   }
 
+  //zane: just call insert and erase to resize.
   void resize(size_type __new_size, const _Tp& __x) {
     if (__new_size < size()) 
       erase(begin() + __new_size, end());
@@ -494,7 +528,8 @@ protected:
 
 #endif /* __STL_MEMBER_TEMPLATES */
 };
-
+//zane: all these operators inline.
+//zane: just check one by one.
 template <class _Tp, class _Alloc>
 inline bool 
 operator==(const vector<_Tp, _Alloc>& __x, const vector<_Tp, _Alloc>& __y)
@@ -502,7 +537,10 @@ operator==(const vector<_Tp, _Alloc>& __x, const vector<_Tp, _Alloc>& __y)
   return __x.size() == __y.size() &&
          equal(__x.begin(), __x.end(), __y.begin());
 }
-
+//zane: just lexicographical_compare.
+//zane: this function defined in stl_algobase.h
+//zane: just compare one by one.
+//zane: NEED CONST.
 template <class _Tp, class _Alloc>
 inline bool 
 operator<(const vector<_Tp, _Alloc>& __x, const vector<_Tp, _Alloc>& __y)
@@ -545,6 +583,8 @@ operator>=(const vector<_Tp, _Alloc>& __x, const vector<_Tp, _Alloc>& __y) {
 
 #endif /* __STL_FUNCTION_TMPL_PARTIAL_ORDER */
 
+//zane: if already know left is smaller than right in size.
+//zane: just destroy left and construct a new left by right is better.
 template <class _Tp, class _Alloc>
 vector<_Tp,_Alloc>& 
 vector<_Tp,_Alloc>::operator=(const vector<_Tp, _Alloc>& __x)
@@ -574,14 +614,20 @@ vector<_Tp,_Alloc>::operator=(const vector<_Tp, _Alloc>& __x)
 template <class _Tp, class _Alloc>
 void vector<_Tp, _Alloc>::_M_fill_assign(size_t __n, const value_type& __val) 
 {
+  //zane: first situation: bigger than capacity; allocate a new block.
+  //zane: swap new one to old one.
   if (__n > capacity()) {
     vector<_Tp, _Alloc> __tmp(__n, __val, get_allocator());
     __tmp.swap(*this);
   }
+  //zane: second situation: bigger than size.
+  //zane: fill current size block to __val then fill bigger than size part.
   else if (__n > size()) {
     fill(begin(), end(), __val);
     _M_finish = uninitialized_fill_n(_M_finish, __n - size(), __val);
   }
+  //zane: third situation: smaller than size
+  //zane: fill assigned val and erase remaining.
   else
     erase(fill_n(begin(), __n, __val), end());
 }
@@ -594,8 +640,10 @@ void vector<_Tp, _Alloc>::_M_assign_aux(_InputIter __first, _InputIter __last,
   iterator __cur = begin();
   for ( ; __first != __last && __cur != end(); ++__cur, ++__first)
     *__cur = *__first;
+  //zane: if __cur didn't touch end().
   if (__first == __last)
     erase(__cur, end());
+  //zane: if __cur touch end() but __first didn't touch __last
   else
     insert(end(), __first, __last);
 }
@@ -628,7 +676,8 @@ vector<_Tp, _Alloc>::_M_assign_aux(_ForwardIter __first, _ForwardIter __last,
 }
 
 #endif /* __STL_MEMBER_TEMPLATES */
-
+//zane: all these assign, fill, insert are similar.
+//zane: just destroy useless one, and allocate and construct new one.
 template <class _Tp, class _Alloc>
 void 
 vector<_Tp, _Alloc>::_M_insert_aux(iterator __position, const _Tp& __x)
@@ -642,6 +691,12 @@ vector<_Tp, _Alloc>::_M_insert_aux(iterator __position, const _Tp& __x)
   }
   else {
     const size_type __old_size = size();
+    //zane: if previous has no memory ,just allocate 1 memory block.
+    //zane: if previous has memory, allocate double size of old.
+    //zane: SO, we can see if we want to insert or push many elements
+    //zane: first construct a big memory block.
+    //zane: then insert will cost less time.
+    //zane: but many useless space.
     const size_type __len = __old_size != 0 ? 2 * __old_size : 1;
     iterator __new_start = _M_allocate(__len);
     iterator __new_finish = __new_start;
@@ -814,15 +869,23 @@ vector<_Tp, _Alloc>::insert(iterator __position,
   if (__first != __last) {
     size_type __n = 0;
     distance(__first, __last, __n);
+    //zane: enough capacity.
     if (size_type(_M_end_of_storage - _M_finish) >= __n) {
       const size_type __elems_after = _M_finish - __position;
       iterator __old_finish = _M_finish;
+      //zane: position is not in finish -n to finish range.
       if (__elems_after > __n) {
+        //zane: move finish - __n to finish
+        //zane: we have __n size spare space.
         uninitialized_copy(_M_finish - __n, _M_finish, _M_finish);
         _M_finish += __n;
+        //zane: move oldfinish - __n to oldfinish to oldfinish back.
         copy_backward(__position, __old_finish - __n, __old_finish);
+        //zane: the goal touched.
         copy(__first, __last, __position);
       }
+      //zane: position is in finish - n to finish range.
+      //zane: we don't need __n space, just __n - elems_after is enouth.
       else {
         uninitialized_copy(__first + __elems_after, __last, _M_finish);
         _M_finish += __n - __elems_after;
@@ -831,8 +894,11 @@ vector<_Tp, _Alloc>::insert(iterator __position,
         copy(__first, __first + __elems_after, __position);
       }
     }
+    //zane: space not enough.
+    //zane: reallocate a block of memory then change the status variables.
     else {
       const size_type __old_size = size();
+      //zane: double the size or bigger than double.
       const size_type __len = __old_size + max(__old_size, __n);
       iterator __new_start = _M_allocate(__len);
       iterator __new_finish = __new_start;
