@@ -51,7 +51,8 @@ template <class T> inline void copy(T* source,T* destination,int n) {
 }
 */
 
-
+//zane: these typedefs are used for allocation and construction.
+//zane: basic types (T & F)
 struct __true_type {
 };
 

@@ -49,7 +49,8 @@ struct random_access_iterator_tag : public bidirectional_iterator_tag {};
 // bidirectional_iterator, and random_access_iterator are not part of
 // the C++ standard.  (They have been replaced by struct iterator.)
 // They are included for backward compatibility with the HP STL.
-
+//zane: all kinds of iterator needs these five typedef.
+//zane: defination of five categories.
 template <class _Tp, class _Distance> struct input_iterator {
   typedef input_iterator_tag iterator_category;
   typedef _Tp                value_type;
@@ -104,7 +105,7 @@ struct iterator {
 #endif /* __STL_USE_NAMESPACES */
 
 #ifdef __STL_CLASS_PARTIAL_SPECIALIZATION
-
+//zane: get traits by using traits.
 template <class _Iterator>
 struct iterator_traits {
   typedef typename _Iterator::iterator_category iterator_category;
@@ -113,7 +114,8 @@ struct iterator_traits {
   typedef typename _Iterator::pointer           pointer;
   typedef typename _Iterator::reference         reference;
 };
-
+//zane: partial specilization for pointer and const pointer.
+//zane: poniter is a random_access_iterator.
 template <class _Tp>
 struct iterator_traits<_Tp*> {
   typedef random_access_iterator_tag iterator_category;
@@ -138,7 +140,11 @@ struct iterator_traits<const _Tp*> {
 // backward compatibility with the HP STL.
 
 // We introduce internal names for these functions.
-
+//zane: These funcs using traits tech.
+//zane: This is for iterator_category.
+//zane: The _Category and _Distance are defined in stl_algobase.h.
+//zane: typedef typename iterator_traits<_InputIter>::iterator_category _Category;
+//zane: typedef typename iterator_traits<_InputIter>::difference_type _Distance;
 template <class _Iter>
 inline typename iterator_traits<_Iter>::iterator_category
 __iterator_category(const _Iter&)
@@ -263,14 +269,16 @@ inline ptrdiff_t* distance_type(const _Tp*) { return (ptrdiff_t*)(0); }
 #define __VALUE_TYPE(__i)        value_type(__i)
 
 #endif /* __STL_CLASS_PARTIAL_SPECIALIZATION */
-
+//zane: calculate the distance of iterators.
+//zane: similar to advance.
+//zane: using the *_iterator_tag object to decide which function to call.
 template <class _InputIterator, class _Distance>
 inline void __distance(_InputIterator __first, _InputIterator __last,
                        _Distance& __n, input_iterator_tag)
 {
   while (__first != __last) { ++__first; ++__n; }
 }
-
+//zane: random_access_iterator can directly calculate the distance.
 template <class _RandomAccessIterator, class _Distance>
 inline void __distance(_RandomAccessIterator __first, 
                        _RandomAccessIterator __last, 

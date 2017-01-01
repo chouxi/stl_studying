@@ -71,7 +71,9 @@ __uninitialized_copy(_InputIter __first, _InputIter __last,
                      _ForwardIter __result, _Tp*)
 {
   //zane: POD: Plain Old Data, classical C type.
+  //zane: type_traits<> has an element named is_POD_type.
   typedef typename __type_traits<_Tp>::is_POD_type _Is_POD;
+  //zane: get the Is_POD() return __type_true or __type_false.
   return __uninitialized_copy_aux(__first, __last, __result, _Is_POD());
 }
 

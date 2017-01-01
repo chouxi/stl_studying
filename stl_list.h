@@ -52,7 +52,17 @@ struct _List_node : public _List_node_base {
 
 struct _List_iterator_base {
   typedef size_t                     size_type;
+  //zane: the distance of two iterators.
+  //zane: it can represent the capacity of a container.
+  //zane: ptrdiff_t is the difference type of origin pointer.
   typedef ptrdiff_t                  difference_type;
+  //zane: categroies of iterator:
+  //zane:   Input Iterator          (read only)
+  //zane:   Output Iterator         (write only)
+  //zane:   Forward Iterator        (operator ++)
+  //zane:   Bidirectional Iterator  (operator-- and operator ++)
+  //zane:   Random Access Iterator  (All operators including ++, --, random access,etc)
+  //zane: Get category through traits programming tech.
   typedef bidirectional_iterator_tag iterator_category;
 
   _List_node_base* _M_node;
@@ -66,7 +76,7 @@ struct _List_iterator_base {
 
   //zane: basic equal operation
   //zane: These two operators donot need return the input related type.
-  //zane: only bool. So it's works for every types. Base functions.
+  //zane: only bool. So it works for every types. Base functions.
   bool operator==(const _List_iterator_base& __x) const {
     return _M_node == __x._M_node;
   }
@@ -79,11 +89,15 @@ struct _List_iterator_base {
 //zane: But this is generic
 template<class _Tp, class _Ref, class _Ptr>
 struct _List_iterator : public _List_iterator_base {
+  //zane: elements in list can be changed, sos we set _Ref to _Tp& and const Tp&
+  //zane: for iterator and const_iterator
   typedef _List_iterator<_Tp,_Tp&,_Tp*>             iterator;
   typedef _List_iterator<_Tp,const _Tp&,const _Tp*> const_iterator;
   typedef _List_iterator<_Tp,_Ref,_Ptr>             _Self;
 
+  //zane: type the iterator points to.
   typedef _Tp value_type;
+  //zane: just pointer.
   typedef _Ptr pointer;
   typedef _Ref reference;
   typedef _List_node<_Tp> _Node;
