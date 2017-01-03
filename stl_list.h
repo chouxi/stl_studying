@@ -39,12 +39,12 @@ __STL_BEGIN_NAMESPACE
 #pragma set woff 1174
 #pragma set woff 1375
 #endif
-
+//zane: bidirectional
 struct _List_node_base {
   _List_node_base* _M_next;
   _List_node_base* _M_prev;
 };
-
+//zane: pointer + data
 template <class _Tp>
 struct _List_node : public _List_node_base {
   _Tp _M_data;
@@ -71,6 +71,7 @@ struct _List_iterator_base {
   _List_iterator_base() {}
 
   //zane: unit function of ++ and -- operations.
+  //zane: get next or previous, not just ++ or --.
   void _M_incr() { _M_node = _M_node->_M_next; }
   void _M_decr() { _M_node = _M_node->_M_prev; }
 
@@ -85,6 +86,7 @@ struct _List_iterator_base {
   }
 };  
 
+//zane: It's not continous so cannot use origin pointer as iterator.
 //zane: this iterator inherit from _List_iterator_base
 //zane: But this is generic
 template<class _Tp, class _Ref, class _Ptr>
@@ -137,7 +139,7 @@ struct _List_iterator : public _List_iterator_base {
 };
 
 #ifndef __STL_CLASS_PARTIAL_SPECIALIZATION
-
+//zane: iterator is bidirectional.
 inline bidirectional_iterator_tag
 iterator_category(const _List_iterator_base&)
 {
@@ -263,6 +265,7 @@ protected:
   void _M_put_node(_List_node<_Tp>* __p) { _Alloc_type::deallocate(__p, 1); } 
 
 protected:
+  //zane: the pointer of list_node that represent the list.
   _List_node<_Tp>* _M_node;
 };
 
@@ -273,12 +276,14 @@ void
 _List_base<_Tp,_Alloc>::clear() 
 {
   _List_node<_Tp>* __cur = (_List_node<_Tp>*) _M_node->_M_next;
+  //zane: delete all until it touches self again.
   while (__cur != _M_node) {
     _List_node<_Tp>* __tmp = __cur;
     __cur = (_List_node<_Tp>*) __cur->_M_next;
     _Destroy(&__tmp->_M_data);
     _M_put_node(__tmp);
   }
+  //zane: points to self.
   _M_node->_M_next = _M_node;
   _M_node->_M_prev = _M_node;
 }
@@ -352,10 +357,10 @@ protected:
 
 public:
   explicit list(const allocator_type& __a = allocator_type()) : _Base(__a) {}
-
+  //zane: Because _M_node is end of list the _M_next is begin of the list.
   iterator begin()             { return (_Node*)(_M_node->_M_next); }
   const_iterator begin() const { return (_Node*)(_M_node->_M_next); }
-
+  //zane: this _M_node is the end of the list.
   iterator end()             { return _M_node; }
   const_iterator end() const { return _M_node; }
 
