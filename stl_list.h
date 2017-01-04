@@ -261,7 +261,10 @@ public:
 
 protected:
   typedef simple_alloc<_List_node<_Tp>, _Alloc> _Alloc_type;
+  //zane: simple allocator
+  //zane: get_node: just allocate 1 node.
   _List_node<_Tp>* _M_get_node() { return _Alloc_type::allocate(1); }
+  //zane: put_node: deallocate 1 input node.
   void _M_put_node(_List_node<_Tp>* __p) { _Alloc_type::deallocate(__p, 1); } 
 
 protected:
@@ -335,6 +338,7 @@ protected:
 #endif /* __STL_HAS_NAMESPACES */
 
 protected:
+  //zane: __STL_TRY + __STL_UNWIND() is try + catch.
   _Node* _M_create_node(const _Tp& __x)
   {
     _Node* __p = _M_get_node();
@@ -356,6 +360,7 @@ protected:
   }
 
 public:
+  //zane: can construct an empty list.
   explicit list(const allocator_type& __a = allocator_type()) : _Base(__a) {}
   //zane: Because _M_node is end of list the _M_next is begin of the list.
   iterator begin()             { return (_Node*)(_M_node->_M_next); }
@@ -453,6 +458,7 @@ public:
     iterator __tmp = end();
     erase(--__tmp);
   }
+  //zane: most constructor of list call insert to construct
   list(size_type __n, const _Tp& __value,
        const allocator_type& __a = allocator_type())
     : _Base(__a)
@@ -519,14 +525,17 @@ public:
 #endif /* __STL_MEMBER_TEMPLATES */
 
 protected:
+  //zane: put __first to __last before __position.
   void transfer(iterator __position, iterator __first, iterator __last) {
     if (__position != __last) {
       // Remove [first, last) from its old position.
+      //zane: put next to correct place.
       __last._M_node->_M_prev->_M_next     = __position._M_node;
       __first._M_node->_M_prev->_M_next    = __last._M_node;
       __position._M_node->_M_prev->_M_next = __first._M_node; 
 
       // Splice [first, last) into its new position.
+      //zane: modify prev to correct place according to next.
       _List_node_base* __tmp      = __position._M_node->_M_prev;
       __position._M_node->_M_prev = __last._M_node->_M_prev;
       __last._M_node->_M_prev     = __first._M_node->_M_prev; 
@@ -535,6 +544,7 @@ protected:
   }
 
 public:
+  //zane: just call transfer.
   void splice(iterator __position, list& __x) {
     if (!__x.empty()) 
       this->transfer(__position, __x.begin(), __x.end());
@@ -563,6 +573,7 @@ public:
 #endif /* __STL_MEMBER_TEMPLATES */
 };
 
+//zane: check one by one. No highlights in this part all containers are similar.
 template <class _Tp, class _Alloc>
 inline bool 
 operator==(const list<_Tp,_Alloc>& __x, const list<_Tp,_Alloc>& __y)
@@ -735,7 +746,7 @@ list<_Tp, _Alloc>::_M_assign_dispatch(_InputIter __first2, _InputIter __last2,
 }
 
 #endif /* __STL_MEMBER_TEMPLATES */
-
+//zane: find then erase
 template <class _Tp, class _Alloc>
 void list<_Tp, _Alloc>::remove(const _Tp& __value)
 {
@@ -757,14 +768,18 @@ void list<_Tp, _Alloc>::unique()
   if (__first == __last) return;
   iterator __next = __first;
   while (++__next != __last) {
+    //zane: if continous same erase.
     if (*__first == *__next)
       erase(__next);
     else
+      //zane: move first to next
       __first = __next;
+    //zane: because erase, make next first again.
     __next = __first;
+    //zane: that's why while(++__next).
   }
 }
-
+//zane: this and x are sorted.
 template <class _Tp, class _Alloc>
 void list<_Tp, _Alloc>::merge(list<_Tp, _Alloc>& __x)
 {
@@ -774,21 +789,26 @@ void list<_Tp, _Alloc>::merge(list<_Tp, _Alloc>& __x)
   iterator __last2 = __x.end();
   while (__first1 != __last1 && __first2 != __last2)
     if (*__first2 < *__first1) {
+      //zane: good way to move first2 forward.
       iterator __next = __first2;
       transfer(__first1, __first2, ++__next);
       __first2 = __next;
     }
     else
       ++__first1;
+  //zane: cat the remaing of the __x to the end of this.
   if (__first2 != __last2) transfer(__last1, __first2, __last2);
 }
 
 inline void __List_base_reverse(_List_node_base* __p)
 {
   _List_node_base* __tmp = __p;
+  //zane: donot need to use transfer. much quicker.
+  //zane: using do-while make it easier, donot need to check length.
   do {
     __STD::swap(__tmp->_M_next, __tmp->_M_prev);
     __tmp = __tmp->_M_prev;     // Old next node is now prev.
+    //zane: list is a circle, so it will go back to __p again.
   } while (__tmp != __p);
 }
 
@@ -798,25 +818,44 @@ inline void list<_Tp, _Alloc>::reverse()
   __List_base_reverse(this->_M_node);
 }    
 
+//zane: sort() in STL can only sort randomaccessiterator container.
+//zane: it's a merge sort without recursion
 template <class _Tp, class _Alloc>
 void list<_Tp, _Alloc>::sort()
 {
   // Do nothing if the list has length 0 or 1.
   if (_M_node->_M_next != _M_node && _M_node->_M_next->_M_next != _M_node) {
     list<_Tp, _Alloc> __carry;
+    //zane: at most 2^(64-1) elements.
+    //zane: Basic method of this merge sort as follow.
+    //zane: 0 1 2 3 ... (index of counter)
+    //zane: 1 2 4 8 ... (# of elements can save)
+    //zane: the elements in counters are already sorted in that number.
+    //zane: carry is the middle memory.
+    //zane: get 1 -> 2 from index 0 swap to index 1
+    //zane: get 2 -> 4 from index 1 swap to index 2
+    //zane: get 4 -> 8 from index 2 swap to index 3
+    //zane: if not enough save to middle index until it's enough.
     list<_Tp, _Alloc> __counter[64];
     int __fill = 0;
     while (!empty()) {
+      //zane: get the first element in this and remove it from this.
       __carry.splice(__carry.begin(), *this, begin());
       int __i = 0;
       while(__i < __fill && !__counter[__i].empty()) {
+        //zane: merge carry to counter[i]
         __counter[__i].merge(__carry);
+        //zane: push result of merging back to carry.
+        //zane: carry is empty now.
         __carry.swap(__counter[__i++]);
+        //zane: counter[i] is empty now.
       }
-      __carry.swap(__counter[__i]);         
+      //zane: swap __carry with the last couter[i].
+      __carry.swap(__counter[__i]); 
+      //zane: update the depth of comparasion.
       if (__i == __fill) ++__fill;
     } 
-
+    //zane: get the result of sorting.
     for (int __i = 1; __i < __fill; ++__i)
       __counter[__i].merge(__counter[__i-1]);
     swap(__counter[__fill-1]);
@@ -824,7 +863,7 @@ void list<_Tp, _Alloc>::sort()
 }
 
 #ifdef __STL_MEMBER_TEMPLATES
-
+//zane: find then erase.
 template <class _Tp, class _Alloc> template <class _Predicate>
 void list<_Tp, _Alloc>::remove_if(_Predicate __pred)
 {
