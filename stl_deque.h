@@ -67,6 +67,9 @@
  * template template parameters), and it has been removed.
  */
 
+//zane: there is no capacity in deque,
+//zane: not like vector, deque is not continuous memory container.
+//zane: If push_front is frequent, use this. Otherwise, vector is better.
 __STL_BEGIN_NAMESPACE 
 
 #if defined(__sgi) && !defined(__GNUC__) && (_MIPS_SIM != _MIPS_SIM_ABI32)
@@ -80,12 +83,15 @@ inline size_t __deque_buf_size(size_t __size) {
   return __size < 512 ? size_t(512 / __size) : size_t(1);
 }
 
+//zane: the iterator of deque is complexitiy.
 template <class _Tp, class _Ref, class _Ptr>
 struct _Deque_iterator {
   typedef _Deque_iterator<_Tp, _Tp&, _Tp*>             iterator;
   typedef _Deque_iterator<_Tp, const _Tp&, const _Tp*> const_iterator;
   static size_t _S_buffer_size() { return __deque_buf_size(sizeof(_Tp)); }
 
+  //zane: this is also a random_access_iterator.
+  //zane: but it's very expensive to random_access.
   typedef random_access_iterator_tag iterator_category;
   typedef _Tp value_type;
   typedef _Ptr pointer;
@@ -349,6 +355,9 @@ protected:
   enum { _S_initial_map_size = 8 };
 
 protected:
+  //zane: this is the pointer that points to a memory block, this block is continus.
+  //zane: every element in this block points to other continus memory blocks.
+  //zane: so it's a double pointer.
   _Tp** _M_map;
   size_t _M_map_size;  
   iterator _M_start;
