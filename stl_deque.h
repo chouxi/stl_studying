@@ -79,12 +79,15 @@ __STL_BEGIN_NAMESPACE
 
 // Note: this function is simply a kludge to work around several compilers'
 //  bugs in handling constant expressions.
+//zane: if __size < 512 return the number of T can fill into the 512 memory block.
+//zane: otherwise return 1.
 inline size_t __deque_buf_size(size_t __size) {
   return __size < 512 ? size_t(512 / __size) : size_t(1);
 }
 
 //zane: the iterator of deque is complexitiy.
 template <class _Tp, class _Ref, class _Ptr>
+//zane: didn't inherit from the iterator.
 struct _Deque_iterator {
   typedef _Deque_iterator<_Tp, _Tp&, _Tp*>             iterator;
   typedef _Deque_iterator<_Tp, const _Tp&, const _Tp*> const_iterator;
@@ -101,10 +104,13 @@ struct _Deque_iterator {
   typedef _Tp** _Map_pointer;
 
   typedef _Deque_iterator _Self;
-
+  //zane: current element in current block memory
   _Tp* _M_cur;
+  //zane: head of current block memory
   _Tp* _M_first;
+  //zane: tail of current block memory.
   _Tp* _M_last;
+  //zane: points to mapping.
   _Map_pointer _M_node;
 
   _Deque_iterator(_Tp* __x, _Map_pointer __y) 
@@ -194,9 +200,11 @@ struct _Deque_iterator {
   bool operator<=(const _Self& __x) const { return !(__x < *this); }
   bool operator>=(const _Self& __x) const { return !(*this < __x); }
 
+  //zane: change the current node to a new_node.
   void _M_set_node(_Map_pointer __new_node) {
     _M_node = __new_node;
     _M_first = *__new_node;
+    //zane: move to the finish by calculate the size of this type multiply the number of buffer.
     _M_last = _M_first + difference_type(_S_buffer_size());
   }
 };
