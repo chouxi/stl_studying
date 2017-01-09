@@ -133,6 +133,7 @@ struct _Deque_iterator {
 
   _Self& operator++() {
     ++_M_cur;
+    //zane: _M_last points to nothing.
     if (_M_cur == _M_last) {
       _M_set_node(_M_node + 1);
       _M_cur = _M_first;
@@ -141,10 +142,12 @@ struct _Deque_iterator {
   }
   _Self operator++(int)  {
     _Self __tmp = *this;
+    //zane: ++ *this call the previous overrided & operator++.
     ++*this;
     return __tmp;
   }
 
+  //zane: similar to ++ operator.
   _Self& operator--() {
     if (_M_cur == _M_first) {
       _M_set_node(_M_node - 1);
@@ -161,13 +164,18 @@ struct _Deque_iterator {
 
   _Self& operator+=(difference_type __n)
   {
+    //zane: current offset + desired offset is the goal offset.
     difference_type __offset = __n + (_M_cur - _M_first);
+    //zane: If the offset is in the buffer_range and bigger than 0 which means will not move backward.
     if (__offset >= 0 && __offset < difference_type(_S_buffer_size()))
       _M_cur += __n;
     else {
+      //zane: calc how many buffer blocks needs to move.
       difference_type __node_offset =
         __offset > 0 ? __offset / difference_type(_S_buffer_size())
+                    //zane: if the __offset is neg int.
                    : -difference_type((-__offset - 1) / _S_buffer_size()) - 1;
+      //zane: move to correct buffer block and correct node.
       _M_set_node(_M_node + __node_offset);
       _M_cur = _M_first + 
         (__offset - __node_offset * difference_type(_S_buffer_size()));
@@ -178,9 +186,11 @@ struct _Deque_iterator {
   _Self operator+(difference_type __n) const
   {
     _Self __tmp = *this;
+    //zane: call the overrided += operator.
     return __tmp += __n;
   }
 
+  //zane: this call of += shows it can handle the + neg int situation.
   _Self& operator-=(difference_type __n) { return *this += -__n; }
  
   _Self operator-(difference_type __n) const {
@@ -188,8 +198,11 @@ struct _Deque_iterator {
     return __tmp -= __n;
   }
 
+  //zane: random access.
+  //zane: using + operator which call += in implementation.
   reference operator[](difference_type __n) const { return *(*this + __n); }
 
+  //zane: checking whether the pointers are the same.
   bool operator==(const _Self& __x) const { return _M_cur == __x._M_cur; }
   bool operator!=(const _Self& __x) const { return !(*this == __x); }
   bool operator<(const _Self& __x) const {
@@ -218,6 +231,7 @@ operator+(ptrdiff_t __n, const _Deque_iterator<_Tp, _Ref, _Ptr>& __x)
 
 #ifndef __STL_CLASS_PARTIAL_SPECIALIZATION
 
+//zane: DEQUE is a random_access DS.
 template <class _Tp, class _Ref, class _Ptr>
 inline random_access_iterator_tag
 iterator_category(const _Deque_iterator<_Tp,_Ref,_Ptr>&)
@@ -308,6 +322,8 @@ protected:
 
 template <class _Tp, class _Alloc>
 class _Deque_base
+//zane: inherited the Deque_alloc_base.
+//zane: Tp** map and size_t map_size are inherited.
   : public _Deque_alloc_base<_Tp,_Alloc,
                               _Alloc_traits<_Tp, _Alloc>::_S_instanceless>
 {
@@ -333,12 +349,15 @@ protected:
   enum { _S_initial_map_size = 8 };
 
 protected:
+  //zane: first and last elements' iterator.
   iterator _M_start;
   iterator _M_finish;
 };
 
 #else /* __STL_USE_STD_ALLOCATORS */
 
+//zane: don't inherit version.
+//zane: similar to previous one.
 template <class _Tp, class _Alloc>
 class _Deque_base {
 public:
@@ -391,6 +410,7 @@ protected:
 template <class _Tp, class _Alloc>
 _Deque_base<_Tp,_Alloc>::~_Deque_base() {
   if (_M_map) {
+    //zane: destroy nodes then map.
     _M_destroy_nodes(_M_start._M_node, _M_finish._M_node + 1);
     _M_deallocate_map(_M_map, _M_map_size);
   }
@@ -403,6 +423,7 @@ _Deque_base<_Tp,_Alloc>::_M_initialize_map(size_t __num_elements)
   size_t __num_nodes = 
     __num_elements / __deque_buf_size(sizeof(_Tp)) + 1;
 
+  //zane: initial 2 more buffer block than needs.
   _M_map_size = max((size_t) _S_initial_map_size, __num_nodes + 2);
   _M_map = _M_allocate_map(_M_map_size);
 
@@ -414,9 +435,12 @@ _Deque_base<_Tp,_Alloc>::_M_initialize_map(size_t __num_elements)
   }
   __STL_UNWIND((_M_deallocate_map(_M_map, _M_map_size), 
                 _M_map = 0, _M_map_size = 0));
+  //zane: first set iterator to correct position.
   _M_start._M_set_node(__nstart);
   _M_finish._M_set_node(__nfinish - 1);
+  //zane: set current of start to the first.
   _M_start._M_cur = _M_start._M_first;
+  //zane: set current of finish to the end.
   _M_finish._M_cur = _M_finish._M_first +
                __num_elements % __deque_buf_size(sizeof(_Tp));
 }
@@ -517,8 +541,8 @@ public:                         // Basic accessors
   void _M_range_check(size_type __n) const {
     if (__n >= this->size())
       __stl_throw_range_error("deque");
-  }
 
+  }
   reference at(size_type __n)
     { _M_range_check(__n); return (*this)[__n]; }
   const_reference at(size_type __n) const
@@ -538,6 +562,8 @@ public:                         // Basic accessors
     return *__tmp;
   }
 
+  //zane: size is the diff between iterators.
+  //zane: using override - operator between two deque_iterators which implemented in iterator part.
   size_type size() const { return _M_finish - _M_start; }
   size_type max_size() const { return size_type(-1); }
   bool empty() const { return _M_finish == _M_start; }
@@ -590,6 +616,7 @@ public:                         // Constructor, destructor.
 
   ~deque() { destroy(_M_start, _M_finish); }
 
+  //zane: copy of two deque needs earse when later is smaller and insert when later is larger.
   deque& operator= (const deque& __x) {
     const size_type __len = size();
     if (&__x != this) {
@@ -604,6 +631,7 @@ public:                         // Constructor, destructor.
     return *this;
   }        
 
+  //zane: swap needs to swap all the variables including map related.
   void swap(deque& __x) {
     __STD::swap(_M_start, __x._M_start);
     __STD::swap(_M_finish, __x._M_finish);
