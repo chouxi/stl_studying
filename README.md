@@ -6,6 +6,7 @@ Already completed part:
 - iterator and traits technique
 - vector
 - list
+- deque
 
 Already commented files:
 - 
