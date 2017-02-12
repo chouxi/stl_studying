@@ -704,6 +704,7 @@ private:                        // helper functions for assign()
 public:                         // push_* and pop_*
   
   void push_back(const value_type& __t) {
+    // zane: check whether last node's pointer points to end
     if (_M_finish._M_cur != _M_finish._M_last - 1) {
       construct(_M_finish._M_cur, __t);
       ++_M_finish._M_cur;
@@ -713,6 +714,7 @@ public:                         // push_* and pop_*
   }
 
   void push_back() {
+    // zane: push an empty element
     if (_M_finish._M_cur != _M_finish._M_last - 1) {
       construct(_M_finish._M_cur);
       ++_M_finish._M_cur;
@@ -721,6 +723,7 @@ public:                         // push_* and pop_*
       _M_push_back_aux();
   }
 
+  // zane: similar method to push_back
   void push_front(const value_type& __t) {
     if (_M_start._M_cur != _M_start._M_first) {
       construct(_M_start._M_cur - 1, __t);
@@ -741,6 +744,7 @@ public:                         // push_* and pop_*
 
 
   void pop_back() {
+    // zane: need to check whether it touches start point of last node
     if (_M_finish._M_cur != _M_finish._M_first) {
       --_M_finish._M_cur;
       destroy(_M_finish._M_cur);
@@ -750,6 +754,7 @@ public:                         // push_* and pop_*
   }
 
   void pop_front() {
+    // zane: need to check whether it touches the last of the first node
     if (_M_start._M_cur != _M_start._M_last - 1) {
       destroy(_M_start._M_cur);
       ++_M_start._M_cur;
@@ -761,21 +766,25 @@ public:                         // push_* and pop_*
 public:                         // Insert
 
   iterator insert(iterator position, const value_type& __x) {
+    // zane: insert to this.begin()
     if (position._M_cur == _M_start._M_cur) {
       push_front(__x);
       return _M_start;
     }
+    // zane: insert to this.end()
     else if (position._M_cur == _M_finish._M_cur) {
       push_back(__x);
       iterator __tmp = _M_finish;
       --__tmp;
       return __tmp;
     }
+    // zane: other places
     else {
       return _M_insert_aux(position, __x);
     }
   }
 
+  // zane: insert empty element
   iterator insert(iterator __position)
     { return insert(__position, value_type()); }
 
@@ -808,6 +817,7 @@ public:                         // Insert
 
 #else /* __STL_MEMBER_TEMPLATES */
 
+  // zane: insert block
   void insert(iterator __pos,
               const value_type* __first, const value_type* __last);
   void insert(iterator __pos,
@@ -830,14 +840,20 @@ public:                         // Erase
     iterator __next = __pos;
     ++__next;
     difference_type __index = __pos - _M_start;
+    // zane: this is a good design
+    // zane: if the first part (start->pos) is smaller than second half (next->end)
+    // zane: we choose to erase pos and move first half one step forward to end.
+    // zane: this improved the performance.
     if (size_type(__index) < (this->size() >> 1)) {
       copy_backward(_M_start, __pos, __next);
       pop_front();
     }
     else {
+      // zane: move back to forward
       copy(__next, _M_finish, __pos);
       pop_back();
     }
+    // zane: return next.
     return _M_start + __index;
   }
 
@@ -1055,6 +1071,7 @@ deque<_Tp,_Alloc>::erase(iterator __first, iterator __last)
   else {
     difference_type __n = __last - __first;
     difference_type __elems_before = __first - _M_start;
+    // zane: this design is similar to earse one element one
     if (__elems_before < difference_type((this->size() - __n) / 2)) {
       copy_backward(_M_start, __first, __last);
       iterator __new_start = _M_start + __n;
@@ -1076,6 +1093,7 @@ deque<_Tp,_Alloc>::erase(iterator __first, iterator __last)
 template <class _Tp, class _Alloc> 
 void deque<_Tp,_Alloc>::clear()
 {
+  // zane: delete nodes from start + 1 to end -1
   for (_Map_pointer __node = _M_start._M_node + 1;
        __node < _M_finish._M_node;
        ++__node) {
@@ -1083,6 +1101,7 @@ void deque<_Tp,_Alloc>::clear()
     _M_deallocate_node(*__node);
   }
 
+  // zane: this means there might be elements in start or elements in end node
   if (_M_start._M_node != _M_finish._M_node) {
     destroy(_M_start._M_cur, _M_start._M_last);
     destroy(_M_finish._M_first, _M_finish._M_cur);
@@ -1091,6 +1110,7 @@ void deque<_Tp,_Alloc>::clear()
   else
     destroy(_M_start._M_cur, _M_finish._M_cur);
 
+  // zane: init
   _M_finish = _M_start;
 }
 
