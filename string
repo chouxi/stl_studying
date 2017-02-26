@@ -308,8 +308,11 @@ public:                         // Constructor, destructor, assignment.
     : _Base(__a, __n + 1) { _M_terminate_string(); }
 
   basic_string(const basic_string& __s) : _Base(__s.get_allocator()) 
+    // zane: initial non-value
     { _M_range_initialize(__s.begin(), __s.end()); }
 
+  // zane: initial from __pos with __n size with non-value
+  // zane: initial __n with -1
   basic_string(const basic_string& __s, size_type __pos, size_type __n = npos,
                const allocator_type& __a = allocator_type()) 
     : _Base(__a) {
@@ -330,6 +333,7 @@ public:                         // Constructor, destructor, assignment.
     : _Base(__a) 
     { _M_range_initialize(__s, __s + _Traits::length(__s)); }
 
+  // zane: initial from _M_start __n size with value __c
   basic_string(size_type __n, _CharT __c,
                const allocator_type& __a = allocator_type())
     : _Base(__a, __n + 1)
@@ -423,6 +427,7 @@ private:
 
 #ifdef __STL_MEMBER_TEMPLATES
     
+  // zane: different type of iterator initialize
   template <class _InputIter>
   void _M_range_initialize(_InputIter __f, _InputIter __l,
                            input_iterator_tag) {
@@ -450,6 +455,8 @@ private:
     _M_range_initialize(__f, __l, _Category());
   }
 
+  // zane: if the iterator input is integer which is not iterator actually
+  // zane: then we need to fill from _M_start instead of __f
   template <class _Integer>
   void _M_initialize_dispatch(_Integer __n, _Integer __x, __true_type) {
     _M_allocate_block(__n + 1);
@@ -457,6 +464,7 @@ private:
     _M_terminate_string();
   }
 
+  // zane: if it's iterator fill like other iterators.
   template <class _InputIter>
   void _M_initialize_dispatch(_InputIter __f, _InputIter __l, __false_type) {
      _M_range_initialize(__f, __l);
@@ -489,6 +497,7 @@ public:                         // Iterators.
     { return const_reverse_iterator(_M_start); }
 
 public:                         // Size, capacity, etc.
+  // zane: obviously using size() is better
   size_type size() const { return _M_finish - _M_start; }
   size_type length() const { return size(); }
 
