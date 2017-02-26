@@ -214,6 +214,9 @@ protected:
   void _M_deallocate_block() 
     { _M_deallocate(_M_start, _M_end_of_storage - _M_start); }
   
+  // zane: size_t(-1) is the maximum number, when divides by sizeof(_Tp)
+  // zane: the result is the maximum number of _Tp it can have.
+  // zane: Why -1? I think it's used check <= not <
   size_t max_size() const { return (size_t(-1) / sizeof(_Tp)) - 1; }
 
   _String_base(const allocator_type&)
@@ -225,6 +228,7 @@ protected:
 
   ~_String_base() { _M_deallocate_block(); }
 
+  // zane: For throwing errors
   void _M_throw_length_error() const;
   void _M_throw_out_of_range() const;
 };
@@ -384,8 +388,10 @@ protected:                      // Protected members inherited from base.
 
 private:                        // Helper functions used by constructors
                                 // and elsewhere.
+  // zane: construct __p without value
   void _M_construct_null(_CharT* __p) {
     construct(__p);
+	// zane: If can check constructor bug
 #   ifdef __STL_DEFAULT_CONSTRUCTOR_BUG
     __STL_TRY {
       *__p = (_CharT) 0;
@@ -394,6 +400,8 @@ private:                        // Helper functions used by constructors
 #   endif
   }
 
+  // zane: Similar to _M_consturct_null, but this one
+  // zane: didn't depend on the construct which defined in construct.h
   static _CharT _M_null() {
 #   ifndef __STL_DEFAULT_CONSTRUCTOR_BUG
     return _CharT();
