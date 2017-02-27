@@ -1120,8 +1120,10 @@ template <class _Tp, class _Alloc>
 void deque<_Tp,_Alloc>::_M_fill_initialize(const value_type& __value) {
   _Map_pointer __cur;
   __STL_TRY {
+    // zane: fill before _M_finish
     for (__cur = _M_start._M_node; __cur < _M_finish._M_node; ++__cur)
       uninitialized_fill(*__cur, *__cur + _S_buffer_size(), __value);
+	// zane: fill the _M_finish nodes.
     uninitialized_fill(_M_finish._M_first, _M_finish._M_cur, __value);
   }
   __STL_UNWIND(destroy(_M_start, iterator(*__cur, __cur)));
@@ -1251,6 +1253,7 @@ void deque<_Tp,_Alloc>::_M_pop_front_aux()
 
 #ifdef __STL_MEMBER_TEMPLATES  
 
+// zane: for both input and forward iterators.
 template <class _Tp, class _Alloc> template <class _InputIterator>
 void deque<_Tp,_Alloc>::insert(iterator __pos,
                                _InputIterator __first, _InputIterator __last,
@@ -1295,6 +1298,8 @@ deque<_Tp,_Alloc>::_M_insert_aux(iterator __pos, const value_type& __x)
 {
   difference_type __index = __pos - _M_start;
   value_type __x_copy = __x;
+  // zane: check push_front or push_back
+  // zane: based on relationship with this->size()
   if (size_type(__index) < this->size() / 2) {
     push_front(front());
     iterator __front1 = _M_start;
@@ -1344,6 +1349,7 @@ deque<_Tp,_Alloc>::_M_insert_aux(iterator __pos)
     __pos = _M_start + __index;
     copy_backward(__pos, __back2, __back1);
   }
+  // zane: using default constructor.
   *__pos = value_type();
   return __pos;
 }
@@ -1357,10 +1363,14 @@ void deque<_Tp,_Alloc>::_M_insert_aux(iterator __pos,
   size_type __length = this->size();
   value_type __x_copy = __x;
   if (__elems_before < difference_type(__length / 2)) {
+    // zane: reserve memory block first
     iterator __new_start = _M_reserve_elements_at_front(__n);
     iterator __old_start = _M_start;
+	// zane: don't know why needs this line
     __pos = _M_start + __elems_before;
     __STL_TRY {
+	  // zane: if new reserved space cannot fit the elements need to move to forward.
+	  // zane: we need different function to copy.
       if (__elems_before >= difference_type(__n)) {
         iterator __start_n = _M_start + difference_type(__n);
         uninitialized_copy(_M_start, __start_n, __new_start);
@@ -1369,6 +1379,7 @@ void deque<_Tp,_Alloc>::_M_insert_aux(iterator __pos,
         fill(__pos - difference_type(__n), __pos, __x_copy);
       }
       else {
+	    // zane: the space didn't filled up set with __x_copy
         __uninitialized_copy_fill(_M_start, __pos, __new_start, 
                                   _M_start, __x_copy);
         _M_start = __new_start;
@@ -1377,6 +1388,7 @@ void deque<_Tp,_Alloc>::_M_insert_aux(iterator __pos,
     }
     __STL_UNWIND(_M_destroy_nodes(__new_start._M_node, _M_start._M_node));
   }
+  // zane: similar to push_front part
   else {
     iterator __new_finish = _M_reserve_elements_at_back(__n);
     iterator __old_finish = _M_finish;
@@ -1579,6 +1591,8 @@ void deque<_Tp,_Alloc>::_M_insert_aux(iterator __pos,
 
 #endif /* __STL_MEMBER_TEMPLATES */
 
+// zane: just reserve space and init
+// zane: both for front and back
 template <class _Tp, class _Alloc>
 void deque<_Tp,_Alloc>::_M_new_elements_at_front(size_type __new_elems)
 {
@@ -1637,6 +1651,7 @@ void deque<_Tp,_Alloc>::_M_reallocate_map(size_type __nodes_to_add,
                     __new_nstart + __old_num_nodes);
   }
   else {
+    // zane: double the size or more
     size_type __new_map_size = 
       _M_map_size + max(_M_map_size, __nodes_to_add) + 2;
 
@@ -1651,12 +1666,14 @@ void deque<_Tp,_Alloc>::_M_reallocate_map(size_type __nodes_to_add,
   }
 
   _M_start._M_set_node(__new_nstart);
+  // zane: resize the map but didn't change the diff or _M_finish and _M_start
   _M_finish._M_set_node(__new_nstart + __old_num_nodes - 1);
 }
 
 
 // Nonmember functions.
 
+// zane: all operators are inline
 template <class _Tp, class _Alloc>
 inline bool operator==(const deque<_Tp, _Alloc>& __x,
                        const deque<_Tp, _Alloc>& __y) {
