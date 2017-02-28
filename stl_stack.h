@@ -37,6 +37,12 @@ __STL_BEGIN_NAMESPACE
 
 // Forward declarations of operators == and <, needed for friend declaration.
 
+// zane: Same to queue
+// zane: Stack using deque as the container
+// zane: Basicly I think using vector as container is better
+// zane: Only push_back, vector is better than deque
+// zane: Eager allocation by vector
+// zane: So just using vector instead of stack
 template <class _Tp, 
           class _Sequence __STL_DEPENDENT_DEFAULT_TMPL(deque<_Tp>) >
 class stack;
@@ -90,6 +96,7 @@ public:
   size_type size() const { return c.size(); }
   reference top() { return c.back(); }
   const_reference top() const { return c.back(); }
+  // zane: just FILO stack
   void push(const value_type& __x) { c.push_back(__x); }
   void pop() { c.pop_back(); }
 };
