@@ -37,6 +37,8 @@ __STL_BEGIN_NAMESPACE
 
 // Forward declarations of operators < and ==, needed for friend declaration.
 
+// zane: definition of queue
+// zane: obviously, using deque as the container
 template <class _Tp, 
           class _Sequence __STL_DEPENDENT_DEFAULT_TMPL(deque<_Tp>) >
 class queue;
@@ -89,10 +91,14 @@ public:
 
   bool empty() const { return c.empty(); }
   size_type size() const { return c.size(); }
+  // zane: both back and front return reference
   reference front() { return c.front(); }
   const_reference front() const { return c.front(); }
   reference back() { return c.back(); }
   const_reference back() const { return c.back(); }
+  // zane: obviously FIFO queue
+  // zane: push = push_back
+  // zane: pop = pop_front
   void push(const value_type& __x) { c.push_back(__x); }
   void pop() { c.pop_front(); }
 };
@@ -143,6 +149,8 @@ operator>=(const queue<_Tp, _Sequence>& __x, const queue<_Tp, _Sequence>& __y)
 
 #endif /* __STL_FUNCTION_TMPL_PARTIAL_ORDER */
 
+// zane: pq using vector as container
+// zane: using less as comparator which is max heap
 template <class _Tp, 
           class _Sequence __STL_DEPENDENT_DEFAULT_TMPL(vector<_Tp>),
           class _Compare
@@ -176,6 +184,7 @@ public:
     { make_heap(c.begin(), c.end(), comp); }
 
 #ifdef __STL_MEMBER_TEMPLATES
+  // zane: Just using make_heap for building a heap as pq
   template <class _InputIterator>
   priority_queue(_InputIterator __first, _InputIterator __last) 
     : c(__first, __last) { make_heap(c.begin(), c.end(), comp); }
@@ -216,6 +225,7 @@ public:
   bool empty() const { return c.empty(); }
   size_type size() const { return c.size(); }
   const_reference top() const { return c.front(); }
+  // zane: for push and pop just using the function by heap
   void push(const value_type& __x) {
     __STL_TRY {
       c.push_back(__x); 
