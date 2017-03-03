@@ -65,15 +65,18 @@ class set {
 public:
   // typedefs:
 
+  // zane: for set key and value are the same
   typedef _Key     key_type;
   typedef _Key     value_type;
   typedef _Compare key_compare;
   typedef _Compare value_compare;
 private:
+  // zane: obviously this is implemented based on RB tree
   typedef _Rb_tree<key_type, value_type, 
                   _Identity<value_type>, key_compare, _Alloc> _Rep_type;
   _Rep_type _M_t;  // red-black tree representing set
 public:
+  // zane: RB tree is a standard STL container
   typedef typename _Rep_type::const_pointer pointer;
   typedef typename _Rep_type::const_pointer const_pointer;
   typedef typename _Rep_type::const_reference reference;
@@ -86,6 +89,7 @@ public:
   typedef typename _Rep_type::difference_type difference_type;
   typedef typename _Rep_type::allocator_type allocator_type;
 
+  // zane: basicly all the operations of set is implemented by RB_tree API
   // allocation/deallocation
 
   set() : _M_t(_Compare(), allocator_type()) {}
