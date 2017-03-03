@@ -33,6 +33,9 @@
 #ifndef __SGI_STL_INTERNAL_TREE_H
 #define __SGI_STL_INTERNAL_TREE_H
 
+// zane: from here we can see that 
+// zane: auto-ordered containers in STL all based on the RBTree
+// zane: except for qriority_queue which is a heap
 /*
 
 Red-black tree class, designed for use in implementing STL
@@ -64,6 +67,7 @@ __STL_BEGIN_NAMESPACE
 #pragma set woff 1375
 #endif
 
+// zane: is a boolean type here
 typedef bool _Rb_tree_Color_type;
 const _Rb_tree_Color_type _S_rb_tree_red = false;
 const _Rb_tree_Color_type _S_rb_tree_black = true;
@@ -78,6 +82,8 @@ struct _Rb_tree_node_base
   _Base_ptr _M_left;
   _Base_ptr _M_right;
 
+  // zane: no global variables for max and min value
+  // zane: So get max and min still O(logn)
   static _Base_ptr _S_minimum(_Base_ptr __x)
   {
     while (__x->_M_left != 0) __x = __x->_M_left;
