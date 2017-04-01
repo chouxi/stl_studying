@@ -357,6 +357,7 @@ __STL_TEMPLATE_NULL struct _Base_bitset<1> {
   _WordT& _M_hiword()       { return _M_w; }
   _WordT  _M_hiword() const { return _M_w; }
 
+  // zane: basic functions of bit operations.
   void _M_do_and(const _Base_bitset<1>& __x) { _M_w &= __x._M_w; }
   void _M_do_or(const _Base_bitset<1>& __x)  { _M_w |= __x._M_w; }
   void _M_do_xor(const _Base_bitset<1>& __x) { _M_w ^= __x._M_w; }
@@ -405,10 +406,13 @@ size_t _Base_bitset<1>::_M_do_find_first(size_t __not_found) const
     // find byte within word
     for ( size_t __j = 0; __j < sizeof(_WordT); __j++ ) {
       unsigned char __this_byte
+	  // zane: ~(unsigned char)0 is 1111
         = static_cast<unsigned char>(__thisword & (~(unsigned char)0));
       if ( __this_byte )
+	  	// zane: find the first in this block + offset
         return __j*CHAR_BIT + _First_one<true>::_S_first_one[__this_byte];
 
+	  // zane: move forward
       __thisword >>= CHAR_BIT;
     }
   }
@@ -429,12 +433,14 @@ size_t _Base_bitset<1>::_M_do_find_next(size_t __prev, size_t __not_found ) cons
   _WordT __thisword = _M_w;
 
   // mask off bits below bound
+  // zane: remove prev
   __thisword &= (~static_cast<_WordT>(0)) << _S_whichbit(__prev);
 
   if ( __thisword != static_cast<_WordT>(0) ) {
     // find byte within word
     // get first byte into place
     __thisword >>= _S_whichbyte(__prev) * CHAR_BIT;
+	// zane: then like find first
     for ( size_t __j = _S_whichbyte(__prev); __j < sizeof(_WordT); __j++ ) {
       unsigned char __this_byte
         = static_cast<unsigned char>(__thisword & (~(unsigned char)0));
@@ -455,6 +461,8 @@ size_t _Base_bitset<1>::_M_do_find_next(size_t __prev, size_t __not_found ) cons
 
 template <size_t _Extrabits> struct _Sanitize {
   static void _M_do_sanitize(unsigned long& __val)
+  	// zane: 000..000+_Extrabits 1 ones.
+	// zane: remove high bits
     { __val &= ~((~static_cast<unsigned long>(0)) << _Extrabits); }
 };
 
@@ -483,6 +491,7 @@ private:
 public:
 
   // bit reference:
+  // zane: friend class
   class reference;
   friend class reference;
 
@@ -505,8 +514,10 @@ public:
 
     // for b[i] = __x;
     reference& operator=(bool __x) {
+	// zane: make highest 1
       if ( __x )
         *_M_wp |= _Base::_S_maskbit(_M_bpos);
+	// zane: make highest 0
       else
         *_M_wp &= ~_Base::_S_maskbit(_M_bpos);
 
@@ -544,6 +555,7 @@ public:
     { _M_do_sanitize(); }
 
 #ifdef __STL_MEMBER_TEMPLATES
+  // zane: copy from strings
   template<class _CharT, class _Traits, class _Alloc>
   explicit bitset(const basic_string<_CharT, _Traits, _Alloc>& __s,
                   size_t __pos = 0)
@@ -576,6 +588,7 @@ public:
   }
 #endif /* __STL_MEMBER_TEMPLATES */
 
+  // zane: basic opertions
   // 23.3.5.2 bitset operations:
   bitset<_Nb>& operator&=(const bitset<_Nb>& __rhs) {
     this->_M_do_and(__rhs);
@@ -608,6 +621,7 @@ public:
   // Extension:
   // Versions of single-bit set, reset, flip, test with no range checking.
   //
+  // zane: no check version
 
   bitset<_Nb>& _Unchecked_set(size_t __pos) {
     this->_M_getword(__pos) |= _Base::_S_maskbit(__pos);
@@ -640,6 +654,7 @@ public:
 
   // Set, reset, and flip.
 
+  // zane: set to one
   bitset<_Nb>& set() {
     this->_M_do_set();
     this->_M_do_sanitize();
@@ -659,7 +674,7 @@ public:
 
     return _Unchecked_set(__pos, __val);
   }
-
+  // zane: reset to 0
   bitset<_Nb>& reset() {
     this->_M_do_reset();
     return *this;
@@ -672,6 +687,7 @@ public:
     return _Unchecked_reset(__pos);
   }
 
+  // zane: flip every bits
   bitset<_Nb>& flip() {
     this->_M_do_flip();
     this->_M_do_sanitize();
@@ -691,6 +707,7 @@ public:
 
   // element access:
   //for b[i];
+  // zane: using reference class for reference not just a pointer here
   reference operator[](size_t __pos) { return reference(*this,__pos); }
   bool operator[](size_t __pos) const { return _Unchecked_test(__pos); }
 
@@ -708,6 +725,8 @@ public:
 
   // Helper functions for string operations.
 #ifdef __STL_MEMBER_TEMPLATES
+  // zane: defination of string operations
+
   template<class _CharT, class _Traits, class _Alloc>
   void _M_copy_from_string(const basic_string<_CharT,_Traits,_Alloc>& __s,
                           size_t,
@@ -775,6 +794,7 @@ void bitset<_Nb>
                         size_t __pos,
                         size_t __n)
 {
+  // zane: really straight forward implementation
   reset();
   const size_t __nbits = min(_Nb, min(__n, __s.size() - __pos));
   for (size_t __i = 0; __i < __nbits; ++__i) {
@@ -797,6 +817,7 @@ void bitset<_Nb>
 {
   __s.assign(_Nb, '0');
   
+  // zane: easy too
   for (size_t __i = 0; __i < _Nb; ++__i) 
     if (_Unchecked_test(__i))
       __s[_Nb - 1 - __i] = '1';
@@ -804,6 +825,7 @@ void bitset<_Nb>
 
 #else /* __STL_MEMBER_TEMPLATES */
 
+// zane: no string template
 template <size_t _Nb>
 void bitset<_Nb>::_M_copy_from_string(const basic_string<char>& __s,
                                       size_t __pos, size_t __n)
@@ -842,6 +864,7 @@ void bitset<_Nb>::_M_copy_to_string(basic_string<char>& __s) const
 // 23.3.5.3 bitset operations:
 //
 
+// zane: basic operators
 template <size_t _Nb>
 inline bitset<_Nb> operator&(const bitset<_Nb>& __x, const bitset<_Nb>& __y) {
   bitset<_Nb> __result(__x);
