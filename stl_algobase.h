@@ -77,17 +77,21 @@ inline void __iter_swap(_ForwardIter1 __a, _ForwardIter2 __b, _Tp*) {
 
 template <class _ForwardIter1, class _ForwardIter2>
 inline void iter_swap(_ForwardIter1 __a, _ForwardIter2 __b) {
+  // zane: for iter_swap, need to check mutable
   __STL_REQUIRES(_ForwardIter1, _Mutable_ForwardIterator);
   __STL_REQUIRES(_ForwardIter2, _Mutable_ForwardIterator);
+  // zane: for iter_swap, need to check whether it's leagl to swap
   __STL_CONVERTIBLE(typename iterator_traits<_ForwardIter1>::value_type,
                     typename iterator_traits<_ForwardIter2>::value_type);
   __STL_CONVERTIBLE(typename iterator_traits<_ForwardIter2>::value_type,
                     typename iterator_traits<_ForwardIter1>::value_type);
+  // zane: using type of __a as a middle type
   __iter_swap(__a, __b, __VALUE_TYPE(__a));
 }
 
 template <class _Tp>
 inline void swap(_Tp& __a, _Tp& __b) {
+  // zane: checking if the _Tp type is assignable
   __STL_REQUIRES(_Tp, _Assignable);
   _Tp __tmp = __a;
   __a = __b;
@@ -116,6 +120,7 @@ inline const _Tp& max(const _Tp& __a, const _Tp& __b) {
 
 #endif /* __BORLANDC__ */
 
+// zane: costom compare func
 template <class _Tp, class _Compare>
 inline const _Tp& min(const _Tp& __a, const _Tp& __b, _Compare __comp) {
   return __comp(__b, __a) ? __b : __a;
@@ -145,6 +150,7 @@ inline _OutputIter __copy(_InputIter __first, _InputIter __last,
   return __result;
 }
 
+// zane: _Distance is distance_type
 template <class _RandomAccessIter, class _OutputIter, class _Distance>
 inline _OutputIter
 __copy(_RandomAccessIter __first, _RandomAccessIter __last,
@@ -158,6 +164,7 @@ __copy(_RandomAccessIter __first, _RandomAccessIter __last,
   return __result;
 }
 
+// zane: already explained, why using memmove
 template <class _Tp>
 inline _Tp*
 __copy_trivial(const _Tp* __first, const _Tp* __last, _Tp* __result) {
@@ -454,7 +461,9 @@ _OutputIter fill_n(_OutputIter __first, _Size __n, const _Tp& __value) {
 }
 
 // Specialization: for one-byte types we can use memset.
-
+// zane: using memset for fill operations
+// zane: do not need to check anything here
+// zane: beacuse just fill to that block of memory
 inline void fill(unsigned char* __first, unsigned char* __last,
                  const unsigned char& __c) {
   unsigned char __tmp = __c;
@@ -499,6 +508,7 @@ inline char* fill_n(char* __first, _Size __n, const char& __c) {
 //--------------------------------------------------
 // equal and mismatch
 
+// zane: finding out the first mismatch element among 2 structure
 template <class _InputIter1, class _InputIter2>
 pair<_InputIter1, _InputIter2> mismatch(_InputIter1 __first1,
                                         _InputIter1 __last1,
@@ -530,6 +540,7 @@ pair<_InputIter1, _InputIter2> mismatch(_InputIter1 __first1,
   return pair<_InputIter1, _InputIter2>(__first1, __first2);
 }
 
+// zane: checking equality, just return bool
 template <class _InputIter1, class _InputIter2>
 inline bool equal(_InputIter1 __first1, _InputIter1 __last1,
                   _InputIter2 __first2) {
@@ -623,6 +634,11 @@ inline bool lexicographical_compare(const char* __first1, const char* __last1,
 #endif /* CHAR_MAX == SCHAR_MAX */
 }
 
+// zane: like strcmp
+// zane: add a length input
+// zane: return -1 when 1 < 2;
+// zane: return 1 when 1 > 2
+// zane: return 0 when equal
 template <class _InputIter1, class _InputIter2>
 int __lexicographical_compare_3way(_InputIter1 __first1, _InputIter1 __last1,
                                    _InputIter2 __first2, _InputIter2 __last2)
