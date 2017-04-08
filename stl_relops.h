@@ -30,6 +30,7 @@
 
 #ifndef __SGI_STL_INTERNAL_RELOPS
 #define __SGI_STL_INTERNAL_RELOPS
+// zane: when override relational operators, just define 2 costom operators == and <, then using this namespace, the other operators are automatically defined according to the already implemented 2.
 
 __STL_BEGIN_RELOPS_NAMESPACE
 
