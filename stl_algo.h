@@ -45,6 +45,7 @@ __STL_BEGIN_NAMESPACE
 
 // __median (an extension, not present in the C++ standard).
 
+// zane: just find out the median from 3 numbers
 template <class _Tp>
 inline const _Tp& __median(const _Tp& __a, const _Tp& __b, const _Tp& __c) {
   __STL_REQUIRES(_Tp, _LessThanComparable);
@@ -63,6 +64,7 @@ inline const _Tp& __median(const _Tp& __a, const _Tp& __b, const _Tp& __c) {
     return __b;
 }
 
+// zane: compare based on costom __comp
 template <class _Tp, class _Compare>
 inline const _Tp&
 __median(const _Tp& __a, const _Tp& __b, const _Tp& __c, _Compare __comp) {
@@ -82,6 +84,7 @@ __median(const _Tp& __a, const _Tp& __b, const _Tp& __c, _Compare __comp) {
     return __b;
 }
 
+// zane: very useful func
 // for_each.  Apply a function to every element of a range.
 template <class _InputIter, class _Function>
 _Function for_each(_InputIter __first, _InputIter __last, _Function __f) {
@@ -93,6 +96,7 @@ _Function for_each(_InputIter __first, _InputIter __last, _Function __f) {
 
 // find and find_if.
 
+// zane: If no target element just return the last's iterator
 template <class _InputIter, class _Tp>
 inline _InputIter find(_InputIter __first, _InputIter __last,
                        const _Tp& __val,
@@ -115,14 +119,25 @@ inline _InputIter find_if(_InputIter __first, _InputIter __last,
 
 #ifdef __STL_CLASS_PARTIAL_SPECIALIZATION
 
+// zane: why other iterators don't have this improvement?
+// zane: because the distance calculated directly when the iterator is
+// zane: random access.
+// zane: Other iterator types need to using ++ to the end
+// zane: which cost O(n)
+// 
+// zane: EVERY FUNC IN THE STL IS REASONABLE. AND CAN FIND OUT THE REASON IN THE CODE.
+//
 template <class _RandomAccessIter, class _Tp>
 _RandomAccessIter find(_RandomAccessIter __first, _RandomAccessIter __last,
                        const _Tp& __val,
                        random_access_iterator_tag)
 {
+  // zane: length / 4
   typename iterator_traits<_RandomAccessIter>::difference_type __trip_count
     = (__last - __first) >> 2;
 
+  // zane: unrolling loop?
+  // zane: do 4 checks in one loop to improve performance
   for ( ; __trip_count > 0 ; --__trip_count) {
     if (*__first == __val) return __first;
     ++__first;
@@ -137,6 +152,9 @@ _RandomAccessIter find(_RandomAccessIter __first, _RandomAccessIter __last,
     ++__first;
   }
 
+  // zane: no break, just execute to last
+  // zane: because there at most 3 diff between first and last
+  // zane: after the for loop
   switch(__last - __first) {
   case 3:
     if (*__first == __val) return __first;
@@ -153,6 +171,7 @@ _RandomAccessIter find(_RandomAccessIter __first, _RandomAccessIter __last,
   }
 }
 
+// zane: same method to find
 template <class _RandomAccessIter, class _Predicate>
 _RandomAccessIter find_if(_RandomAccessIter __first, _RandomAccessIter __last,
                           _Predicate __pred,
@@ -214,6 +233,7 @@ inline _InputIter find_if(_InputIter __first, _InputIter __last,
 
 // adjacent_find.
 
+// zane: find the one that is same to the previous one
 template <class _ForwardIter>
 _ForwardIter adjacent_find(_ForwardIter __first, _ForwardIter __last) {
   __STL_REQUIRES(_ForwardIter, _ForwardIterator);
@@ -241,9 +261,9 @@ _ForwardIter adjacent_find(_ForwardIter __first, _ForwardIter __last,
     return __last;
   _ForwardIter __next = __first;
   while(++__next != __last) {
-    if (__binary_pred(*__first, *__next))
+		  if (__binary_pred(*__first, *__next))
       return __first;
-    __first = __next;
+		  __first = __next;
   }
   return __last;
 }
@@ -311,6 +331,7 @@ count_if(_InputIter __first, _InputIter __last, _Predicate __pred) {
 
 // search.
 
+// zane: allow different type of iterator
 template <class _ForwardIter1, class _ForwardIter2>
 _ForwardIter1 search(_ForwardIter1 __first1, _ForwardIter1 __last1,
                      _ForwardIter2 __first2, _ForwardIter2 __last2) 
@@ -328,6 +349,8 @@ _ForwardIter1 search(_ForwardIter1 __first1, _ForwardIter1 __last1,
   // Test for a pattern of length 1.
   _ForwardIter2 __tmp(__first2);
   ++__tmp;
+  // zane: if only one element in pattern (iterator2)
+  // zane: directly find in the iteration1
   if (__tmp == __last2)
     return find(__first1, __last1, *__first2);
 
@@ -340,6 +363,7 @@ _ForwardIter1 search(_ForwardIter1 __first1, _ForwardIter1 __last1,
   _ForwardIter1 __current = __first1;
 
   while (__first1 != __last1) {
+  	// zane: find the position of first element in iterator2
     __first1 = find(__first1, __last1, *__first2);
     if (__first1 == __last1)
       return __last1;
@@ -349,6 +373,7 @@ _ForwardIter1 search(_ForwardIter1 __first1, _ForwardIter1 __last1,
     if (++__current == __last1)
       return __last1;
 
+    // zane: compare one by one
     while (*__current == *__p) {
       if (++__p == __last2)
         return __first1;
@@ -422,6 +447,7 @@ _ForwardIter1 search(_ForwardIter1 __first1, _ForwardIter1 __last1,
 
 // search_n.  Search for __count consecutive copies of __val.
 
+// zane: val only contain one element
 template <class _ForwardIter, class _Integer, class _Tp>
 _ForwardIter search_n(_ForwardIter __first, _ForwardIter __last,
                       _Integer __count, const _Tp& __val) {
@@ -435,6 +461,7 @@ _ForwardIter search_n(_ForwardIter __first, _ForwardIter __last,
   else {
     __first = find(__first, __last, __val);
     while (__first != __last) {
+	  // zane: reinit __n every loop
       _Integer __n = __count - 1;
       _ForwardIter __i = __first;
       ++__i;
@@ -491,6 +518,7 @@ _ForwardIter search_n(_ForwardIter __first, _ForwardIter __last,
 
 // swap_ranges
 
+// zane: support swap between different type of iterators.
 template <class _ForwardIter1, class _ForwardIter2>
 _ForwardIter2 swap_ranges(_ForwardIter1 __first1, _ForwardIter1 __last1,
                           _ForwardIter2 __first2) {
