@@ -561,6 +561,7 @@ _OutputIter transform(_InputIter1 __first1, _InputIter1 __last1,
 
 // replace, replace_if, replace_copy, replace_copy_if
 
+// zane: need the input iterator type at least forward iterator
 template <class _ForwardIter, class _Tp>
 void replace(_ForwardIter __first, _ForwardIter __last,
              const _Tp& __old_value, const _Tp& __new_value) {
@@ -598,6 +599,7 @@ _OutputIter replace_copy(_InputIter __first, _InputIter __last,
   return __result;
 }
 
+// zane: output iterator do not need to specify the size
 template <class _InputIter, class _OutputIter, class _Predicate, class _Tp>
 _OutputIter replace_copy_if(_InputIter __first, _InputIter __last,
                             _OutputIter __result,
@@ -671,6 +673,7 @@ _ForwardIter remove(_ForwardIter __first, _ForwardIter __last,
   __STL_CONVERTIBLE(_Tp, typename iterator_traits<_ForwardIter>::value_type);
   __first = find(__first, __last, __value);
   _ForwardIter __i = __first;
+  // zane: just uses remove_copy
   return __first == __last ? __first 
                            : remove_copy(++__i, __last, __first, __value);
 }
@@ -689,10 +692,13 @@ _ForwardIter remove_if(_ForwardIter __first, _ForwardIter __last,
 
 // unique and unique_copy
 
+// zane: need to be sorted.
+// zane: only detect adjacent elements
 template <class _InputIter, class _OutputIter, class _Tp>
 _OutputIter __unique_copy(_InputIter __first, _InputIter __last,
                           _OutputIter __result, _Tp*) {
   _Tp __value = *__first;
+  // zane: output iterator cannot read
   *__result = __value;
   while (++__first != __last)
     if (!(__value == *__first)) {
@@ -786,6 +792,7 @@ _ForwardIter unique(_ForwardIter __first, _ForwardIter __last) {
   __STL_REQUIRES(_ForwardIter, _Mutable_ForwardIterator);
   __STL_REQUIRES(typename iterator_traits<_ForwardIter>::value_type,
                  _EqualityComparable);
+  // zane: uses adjacent_find to preprocess the first iterator
   __first = adjacent_find(__first, __last);
   return unique_copy(__first, __last, __first);
 }
@@ -803,16 +810,22 @@ _ForwardIter unique(_ForwardIter __first, _ForwardIter __last,
 
 // reverse and reverse_copy, and their auxiliary functions
 
+// zane: reverse iteration at least bidirectional iterator
 template <class _BidirectionalIter>
 void __reverse(_BidirectionalIter __first, _BidirectionalIter __last, 
                bidirectional_iterator_tag) {
+  // zane: cannot check whether first < last
   while (true)
+    // zane: checking first == last or --last
+	// zane: --last
     if (__first == __last || __first == --__last)
       return;
     else
+	  // zane: swap
       iter_swap(__first++, __last);
 }
 
+// zane: reverse 2 at a time
 template <class _RandomAccessIter>
 void __reverse(_RandomAccessIter __first, _RandomAccessIter __last,
                random_access_iterator_tag) {
