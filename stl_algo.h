@@ -855,6 +855,7 @@ _OutputIter reverse_copy(_BidirectionalIter __first,
 
 // rotate and rotate_copy, and their auxiliary functions
 
+// zane: The fastest alg that I known to rotate.
 template <class _EuclideanRingElement>
 _EuclideanRingElement __gcd(_EuclideanRingElement __m,
                             _EuclideanRingElement __n)
@@ -867,6 +868,8 @@ _EuclideanRingElement __gcd(_EuclideanRingElement __m,
   return __m;
 }
 
+// zane: move the rotated part to the end
+// zane: return the end part start with the first of rotate part
 template <class _ForwardIter, class _Distance>
 _ForwardIter __rotate(_ForwardIter __first,
                       _ForwardIter __middle,
@@ -878,6 +881,8 @@ _ForwardIter __rotate(_ForwardIter __first,
   if (__last  == __middle)
     return __first;
 
+  // zane: move most of the rotated part to the end
+  // zane: remain some part should be the end before the part
   _ForwardIter __first2 = __middle;
   do {
     swap(*__first++, *__first2++);
@@ -889,6 +894,8 @@ _ForwardIter __rotate(_ForwardIter __first,
 
   __first2 = __middle;
 
+  // zane: move the remaining part to the end
+  // zane: by swapping block by block
   while (__first2 != __last) {
     swap (*__first++, *__first2++);
     if (__first == __middle)
@@ -901,6 +908,9 @@ _ForwardIter __rotate(_ForwardIter __first,
 }
 
 
+// zane: bidirectional_iterator can reverse,
+// zane: So there is the smart one,
+// zane: reverse 3 times
 template <class _BidirectionalIter, class _Distance>
 _BidirectionalIter __rotate(_BidirectionalIter __first,
                             _BidirectionalIter __middle,
@@ -913,12 +923,18 @@ _BidirectionalIter __rotate(_BidirectionalIter __first,
   if (__last  == __middle)
     return __first;
 
+  // zane: reverse the first part
   __reverse(__first,  __middle, bidirectional_iterator_tag());
+  // zane: reverse the second part
   __reverse(__middle, __last,   bidirectional_iterator_tag());
 
+  // zane: then reverse all
+  // zane: first swap first last
   while (__first != __middle && __middle != __last)
     swap (*__first++, *--__last);
 
+  // zane: then reverse remaining part
+  // zane: based on which part is not in order
   if (__first == __middle) {
     __reverse(__middle, __last,   bidirectional_iterator_tag());
     return __last;
@@ -929,6 +945,9 @@ _BidirectionalIter __rotate(_BidirectionalIter __first,
   }
 }
 
+// zane: this is a brilliant algorithm
+// zane: only uses on random_access_iterator
+// zane: based on group by GCD
 template <class _RandomAccessIter, class _Distance, class _Tp>
 _RandomAccessIter __rotate(_RandomAccessIter __first,
                            _RandomAccessIter __middle,
@@ -1006,11 +1025,13 @@ _OutputIter rotate_copy(_ForwardIter __first, _ForwardIter __middle,
 // whether we're using rand (part of the standard C library) or lrand48
 // (not standard, but a much better choice whenever it's available).
 
+// zane: this generator a fake random number in range
 template <class _Distance>
 inline _Distance __random_number(_Distance __n) {
 #ifdef __STL_NO_DRAND48
   return rand() % __n;
 #else
+  // zane: this one is better
   return lrand48() % __n;
 #endif
 }
