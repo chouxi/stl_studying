@@ -1038,11 +1038,13 @@ inline _Distance __random_number(_Distance __n) {
 
 // random_shuffle
 
+// zane: only random access iterator
 template <class _RandomAccessIter>
 inline void random_shuffle(_RandomAccessIter __first,
                            _RandomAccessIter __last) {
   __STL_REQUIRES(_RandomAccessIter, _Mutable_RandomAccessIterator);
   if (__first == __last) return;
+  // zane: random change the position for every element
   for (_RandomAccessIter __i = __first + 1; __i != __last; ++__i)
     iter_swap(__i, __first + __random_number((__i - __first) + 1));
 }
@@ -1058,6 +1060,8 @@ void random_shuffle(_RandomAccessIter __first, _RandomAccessIter __last,
 
 // random_sample and random_sample_n (extensions, not part of the standard).
 
+// zane: for output iterator need to get random number each time n times
+// zane: slow
 template <class _ForwardIter, class _OutputIter, class _Distance>
 _OutputIter random_sample_n(_ForwardIter __first, _ForwardIter __last,
                             _OutputIter __out, const _Distance __n)
@@ -1081,6 +1085,7 @@ _OutputIter random_sample_n(_ForwardIter __first, _ForwardIter __last,
   return __out;
 }
 
+// zane: directly specify the random func
 template <class _ForwardIter, class _OutputIter, class _Distance,
           class _RandomNumberGenerator>
 _OutputIter random_sample_n(_ForwardIter __first, _ForwardIter __last,
@@ -1107,6 +1112,7 @@ _OutputIter random_sample_n(_ForwardIter __first, _ForwardIter __last,
   return __out;
 }
 
+// zane: also random number approach
 template <class _InputIter, class _RandomAccessIter, class _Distance>
 _RandomAccessIter __random_sample(_InputIter __first, _InputIter __last,
                                   _RandomAccessIter __out,
@@ -1180,6 +1186,8 @@ random_sample(_InputIter __first, _InputIter __last,
 
 // partition, stable_partition, and their auxiliary functions
 
+// zane: used for quick sort?
+// zane: this approach is not stable
 template <class _ForwardIter, class _Predicate>
 _ForwardIter __partition(_ForwardIter __first,
 		         _ForwardIter __last,
@@ -1201,6 +1209,7 @@ _ForwardIter __partition(_ForwardIter __first,
   return __first;
 }
 
+// zane: optimization based on the bidirection
 template <class _BidirectionalIter, class _Predicate>
 _BidirectionalIter __partition(_BidirectionalIter __first,
                                _BidirectionalIter __last,
